@@ -67,6 +67,7 @@
     <None Include="etc\listening.tga" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="etc\settings.png" />
     <Content Include="LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
