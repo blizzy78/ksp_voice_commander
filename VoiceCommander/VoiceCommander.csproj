@@ -52,6 +52,8 @@
     <Compile Include="Internal\CompatibilityChecker.cs" />
     <Compile Include="Internal\Extensions.cs" />
     <Compile Include="Internal\InstallChecker.cs" />
+    <Compile Include="Internal\InternalCommands.cs" />
+    <Compile Include="Internal\KSPCommands.cs" />
     <Compile Include="Internal\SettingsWindow.cs" />
     <Compile Include="Internal\UpdateChecker.cs" />
     <Compile Include="Internal\VoiceCommand.cs" />

@@ -63,8 +63,8 @@ namespace VoiceCommander {
 		private bool listening = true;
 		private SettingsWindow settingsWindow;
 		private Dictionary<string, List<string>> texts;
-		private VoiceCommandNamespace internalNamespace;
-		private VoiceCommandNamespace kspNamespace;
+		private InternalCommands internalCommands = new InternalCommands();
+		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
 
 		internal VoiceCommander() {
@@ -105,43 +105,8 @@ namespace VoiceCommander {
 				updateChecker = null;
 			};
 
-			addInternalNamespace();
-			addKSPNamespace();
-		}
-
-		private void addInternalNamespace() {
-			internalNamespace = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
-			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", toggleListen);
-			toggleListenCmd.ExecuteAlways = true;
-			internalNamespace.AddCommand(toggleListenCmd);
-			AddNamespace(internalNamespace);
-		}
-
-		private void addKSPNamespace() {
-			kspNamespace = new VoiceCommandNamespace("ksp", "KSP");
-			kspNamespace.AddCommand(new VoiceCommand("quicksave", "Quick Save", kspQuickSave));
-			kspNamespace.AddCommand(new VoiceCommand("quickload", "Quick Load", kspQuickLoad));
-			kspNamespace.AddCommand(new VoiceCommand("toggleMap", "Toggle Map View", kspToggleMap));
-			kspNamespace.AddCommand(new VoiceCommand("cameraFreeMode", "Set Camera to Free Mode", () => kspCameraMode(FlightCamera.Modes.FREE)));
-			kspNamespace.AddCommand(new VoiceCommand("cameraChaseMode", "Set Camera to Chase Mode", () => kspCameraMode(FlightCamera.Modes.CHASE)));
-			kspNamespace.AddCommand(new VoiceCommand("stage", "Activate Next Stage", kspStage));
-			kspNamespace.AddCommand(new VoiceCommand("throttleFull", "Set Throttle to Full", () => kspThrottle(1f)));
-			kspNamespace.AddCommand(new VoiceCommand("throttleZero", "Set Throttle to Zero", () => kspThrottle(0f)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup1", "Activate Action Group 1", () => kspActionGroup(KSPActionGroup.Custom01)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup2", "Activate Action Group 2", () => kspActionGroup(KSPActionGroup.Custom02)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup3", "Activate Action Group 3", () => kspActionGroup(KSPActionGroup.Custom03)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup4", "Activate Action Group 4", () => kspActionGroup(KSPActionGroup.Custom04)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup5", "Activate Action Group 5", () => kspActionGroup(KSPActionGroup.Custom05)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup6", "Activate Action Group 6", () => kspActionGroup(KSPActionGroup.Custom06)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup7", "Activate Action Group 7", () => kspActionGroup(KSPActionGroup.Custom07)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup8", "Activate Action Group 8", () => kspActionGroup(KSPActionGroup.Custom08)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup9", "Activate Action Group 9", () => kspActionGroup(KSPActionGroup.Custom09)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroup10", "Activate Action Group 10", () => kspActionGroup(KSPActionGroup.Custom10)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroupGear", "Activate Action Group 'Gear'", () => kspActionGroup(KSPActionGroup.Gear)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroupBrakes", "Activate Action Group 'Brakes'", () => kspActionGroup(KSPActionGroup.Brakes)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroupLight", "Activate Action Group 'Light'", () => kspActionGroup(KSPActionGroup.Light)));
-			kspNamespace.AddCommand(new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", () => kspActionGroup(KSPActionGroup.Abort)));
-			AddNamespace(kspNamespace);
+			AddNamespace(internalCommands.Namespace);
+			AddNamespace(kspCommands.Namespace);
 		}
 
 		private void startReceive() {
@@ -149,8 +114,8 @@ namespace VoiceCommander {
 		}
 
 		private void OnDestroy() {
-			RemoveNamespace(kspNamespace);
-			RemoveNamespace(internalNamespace);
+			RemoveNamespace(internalCommands.Namespace);
+			RemoveNamespace(kspCommands.Namespace);
 
 			saveSettings();
 
@@ -270,7 +235,7 @@ namespace VoiceCommander {
 			client.Send(data, data.Length, serverEndPoint);
 		}
 
-		private void toggleListen() {
+		internal void toggleListen() {
 			listening = !listening;
 			button.TexturePath = listening ? "blizzy/VoiceCommander/listening" : "blizzy/VoiceCommander/idle";
 		}
@@ -352,54 +317,6 @@ namespace VoiceCommander {
 			}
 
 			rootNode.Save(SETTINGS_FILE);
-		}
-
-		private void kspQuickSave() {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				QuickSaveLoad.QuickSave();
-			}
-		}
-
-		private void kspQuickLoad() {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				HighLogic.CurrentGame = GamePersistence.LoadGame("quicksave", HighLogic.SaveFolder, true, false);
-				HighLogic.CurrentGame.startScene = GameScenes.FLIGHT;
-				HighLogic.CurrentGame.Start();
-			}
-		}
-
-		private void kspToggleMap() {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				if (MapView.MapIsEnabled) {
-					MapView.ExitMapView();
-				} else {
-					MapView.EnterMapView();
-				}
-			}
-		}
-
-		private void kspCameraMode(FlightCamera.Modes mode) {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				FlightCamera.fetch.setMode(mode);
-			}
-		}
-
-		private void kspStage() {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				Staging.ActivateNextStage();
-			}
-		}
-
-		private void kspThrottle(float throttle) {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				FlightInputHandler.state.mainThrottle = throttle;
-			}
-		}
-
-		private void kspActionGroup(KSPActionGroup group) {
-			if (HighLogic.LoadedScene == GameScenes.FLIGHT) {
-				FlightGlobals.ActiveVessel.ActionGroups.ToggleGroup(group);
-			}
 		}
 	}
 }
