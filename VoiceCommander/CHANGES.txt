@@ -1,0 +1,7 @@
+﻿1.1.0
+- Added new commands:
+  - Toggle SAS.
+  - Toggle RCS.
+
+1.0.0, 2014-05-11
+- Initial public release.

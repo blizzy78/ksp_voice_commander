@@ -71,6 +71,7 @@
   <ItemGroup>
     <Content Include="etc\settings.png" />
     <Content Include="LICENSE.txt" />
+    <Content Include="CHANGES.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
