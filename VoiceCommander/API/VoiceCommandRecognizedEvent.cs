@@ -29,16 +29,14 @@ using System.Linq;
 using System.Text;
 
 namespace VoiceCommander {
-	public class VoiceCommandEvent : EventArgs {
-		public string Command {
+	public class VoiceCommandRecognizedEvent {
+		public Dictionary<string, string> Parameters {
 			get;
 			private set;
 		}
 
-		internal VoiceCommandEvent(string command) {
-			this.Command = command;
+		internal VoiceCommandRecognizedEvent(Dictionary<string, string> parameters) {
+			this.Parameters = parameters;
 		}
 	}
-
-	public delegate void VoiceCommandHandler(VoiceCommandEvent @event);
 }

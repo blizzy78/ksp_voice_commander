@@ -11,7 +11,7 @@ are permitted provided that the following conditions are met:
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
+Namespace.AddCommand(
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -37,39 +37,32 @@ namespace VoiceCommander {
 
 		internal KSPCommands() {
 			Namespace = new VoiceCommandNamespace("ksp", "KSP");
-			Namespace.AddCommand(new VoiceCommand("quicksave", "Quick Save", quickSave));
-			Namespace.AddCommand(new VoiceCommand("quickload", "Quick Load", quickLoad));
-			Namespace.AddCommand(new VoiceCommand("toggleMap", "Toggle Map View", toggleMap));
-			Namespace.AddCommand(new VoiceCommand("cameraFreeMode", "Set Camera to Free Mode", () => setCameraMode(FlightCamera.Modes.FREE)));
-			Namespace.AddCommand(new VoiceCommand("cameraChaseMode", "Set Camera to Chase Mode", () => setCameraMode(FlightCamera.Modes.CHASE)));
-			Namespace.AddCommand(new VoiceCommand("stage", "Activate Next Stage", activateStage));
-			Namespace.AddCommand(new VoiceCommand("throttleFull", "Set Throttle to Full", () => setThrottle(1f)));
-			Namespace.AddCommand(new VoiceCommand("throttleZero", "Set Throttle to Zero", () => setThrottle(0f)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup1", "Activate Action Group 1", () => toggleActionGroup(KSPActionGroup.Custom01)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup2", "Activate Action Group 2", () => toggleActionGroup(KSPActionGroup.Custom02)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup3", "Activate Action Group 3", () => toggleActionGroup(KSPActionGroup.Custom03)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup4", "Activate Action Group 4", () => toggleActionGroup(KSPActionGroup.Custom04)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup5", "Activate Action Group 5", () => toggleActionGroup(KSPActionGroup.Custom05)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup6", "Activate Action Group 6", () => toggleActionGroup(KSPActionGroup.Custom06)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup7", "Activate Action Group 7", () => toggleActionGroup(KSPActionGroup.Custom07)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup8", "Activate Action Group 8", () => toggleActionGroup(KSPActionGroup.Custom08)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup9", "Activate Action Group 9", () => toggleActionGroup(KSPActionGroup.Custom09)));
-			Namespace.AddCommand(new VoiceCommand("actionGroup10", "Activate Action Group 10", () => toggleActionGroup(KSPActionGroup.Custom10)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupGear", "Toggle Gear", () => toggleActionGroup(KSPActionGroup.Gear)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupBrakes", "Toggle Brakes", () => toggleActionGroup(KSPActionGroup.Brakes)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupLight", "Toggle Light", () => toggleActionGroup(KSPActionGroup.Light)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", () => toggleActionGroup(KSPActionGroup.Abort)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupSAS", "Toggle SAS", () => toggleActionGroup(KSPActionGroup.SAS)));
-			Namespace.AddCommand(new VoiceCommand("actionGroupRCS", "Toggle RCS", () => toggleActionGroup(KSPActionGroup.RCS)));
+			Namespace += new VoiceCommand("quicksave", "Quick Save", quickSave);
+			Namespace += new VoiceCommand("quickload", "Quick Load", quickLoad);
+			Namespace += new VoiceCommand("toggleMap", "Toggle Map View", toggleMap);
+			Namespace += new VoiceCommand("cameraAutoMode", "Set Camera to Auto Mode", (e) => setCameraMode(FlightCamera.Modes.AUTO));
+			Namespace += new VoiceCommand("cameraFreeMode", "Set Camera to Free Mode", (e) => setCameraMode(FlightCamera.Modes.FREE));
+			Namespace += new VoiceCommand("cameraChaseMode", "Set Camera to Chase Mode", (e) => setCameraMode(FlightCamera.Modes.CHASE));
+			Namespace += new VoiceCommand("stage", "Activate Next Stage", activateStage);
+			Namespace += new VoiceCommand("throttleFull", "Set Throttle to Full", (e) => setThrottle(1f));
+			Namespace += new VoiceCommand("throttleZero", "Set Throttle to Zero", (e) => setThrottle(0f));
+			Namespace += new VoiceCommand("throttlePercent", "Set Throttle", throttlePercent);
+			Namespace += new VoiceCommand("actionGroup", "Activate Action Group", toggleActionGroup);
+			Namespace += new VoiceCommand("actionGroupGear", "Toggle Gear", (e) => toggleActionGroup(KSPActionGroup.Gear));
+			Namespace += new VoiceCommand("actionGroupBrakes", "Toggle Brakes", (e) => toggleActionGroup(KSPActionGroup.Brakes));
+			Namespace += new VoiceCommand("actionGroupLight", "Toggle Light", (e) => toggleActionGroup(KSPActionGroup.Light));
+			Namespace += new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", (e) => toggleActionGroup(KSPActionGroup.Abort));
+			Namespace += new VoiceCommand("actionGroupSAS", "Toggle SAS", (e) => toggleActionGroup(KSPActionGroup.SAS));
+			Namespace += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
 		}
 
-		private void quickSave() {
+		private void quickSave(VoiceCommandRecognizedEvent @event) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				QuickSaveLoad.QuickSave();
 			}
 		}
 
-		private void quickLoad() {
+		private void quickLoad(VoiceCommandRecognizedEvent @event) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				HighLogic.CurrentGame = GamePersistence.LoadGame("quicksave", HighLogic.SaveFolder, true, false);
 				HighLogic.CurrentGame.startScene = GameScenes.FLIGHT;
@@ -77,7 +70,7 @@ namespace VoiceCommander {
 			}
 		}
 
-		private void toggleMap() {
+		private void toggleMap(VoiceCommandRecognizedEvent @event) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				if (MapView.MapIsEnabled) {
 					MapView.ExitMapView();
@@ -93,15 +86,62 @@ namespace VoiceCommander {
 			}
 		}
 
-		private void activateStage() {
+		private void activateStage(VoiceCommandRecognizedEvent @event) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				Staging.ActivateNextStage();
+			}
+		}
+
+		private void throttlePercent(VoiceCommandRecognizedEvent @event) {
+			if (HighLogic.LoadedSceneIsFlight) {
+				setThrottle(float.Parse(@event.Parameters["percentNumber"]) / 100f);
 			}
 		}
 
 		private void setThrottle(float throttle) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				FlightInputHandler.state.mainThrottle = throttle;
+			}
+		}
+
+		private void toggleActionGroup(VoiceCommandRecognizedEvent @event) {
+			if (HighLogic.LoadedSceneIsFlight) {
+				KSPActionGroup group = KSPActionGroup.None;
+				switch (@event.Parameters["actionGroupNumber"]) {
+					case "1":
+						group = KSPActionGroup.Custom01;
+						break;
+					case "2":
+						group = KSPActionGroup.Custom02;
+						break;
+					case "3":
+						group = KSPActionGroup.Custom03;
+						break;
+					case "4":
+						group = KSPActionGroup.Custom04;
+						break;
+					case "5":
+						group = KSPActionGroup.Custom05;
+						break;
+					case "6":
+						group = KSPActionGroup.Custom06;
+						break;
+					case "7":
+						group = KSPActionGroup.Custom07;
+						break;
+					case "8":
+						group = KSPActionGroup.Custom08;
+						break;
+					case "9":
+						group = KSPActionGroup.Custom09;
+						break;
+					case "10":
+						group = KSPActionGroup.Custom10;
+						break;
+				}
+				if (group != KSPActionGroup.None) {
+					toggleActionGroup(group);
+				}
 			}
 		}
 

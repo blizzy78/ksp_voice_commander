@@ -63,6 +63,15 @@ namespace VoiceCommander {
 		private bool listening = true;
 		private SettingsWindow settingsWindow;
 		private Dictionary<string, List<string>> texts;
+		private string yawText;
+		private string pitchText;
+		private string rollText;
+		private string progradeText;
+		private string retrogradeText;
+		private string normalText;
+		private string antiNormalText;
+		private string radialText;
+		private string antiRadialText;
 		private InternalCommands internalCommands = new InternalCommands();
 		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
@@ -164,43 +173,49 @@ namespace VoiceCommander {
 		}
 
 		private void handleSpeechRecognized(VoicePacket packet) {
-			string dataStr = packet.Data;
-			int pos = dataStr.IndexOf('|');
-			string confidenceStr = dataStr.Substring(0, pos);
-			float confidence = float.Parse(confidenceStr, CultureInfo.InvariantCulture);
-			string text = dataStr.Substring(pos + 1);
-			handleSpeechRecognized(text, confidence);
-		}
+			Debug.Log(string.Format("[VoiceCommander] command received: {0}", packet.Data));
 
-		private void handleSpeechRecognized(string text, float confidence) {
-			Debug.Log(string.Format("[VoiceCommander] command received: {0} (confidence: {1})", text, confidence));
+			string[] parts = packet.Data.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+			Dictionary<string, string> parameters = new Dictionary<string, string>();
+			foreach (string part in parts) {
+				string[] paramParts = part.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+				parameters.Add(paramParts[0], paramParts[1]);
+			}
+
+			float confidence = float.Parse(parameters["confidence"]);
 			if (confidence >= MIN_CONFIDENCE) {
-				VoiceCommand cmd = findCommand(text);
+				string command = parameters["command"];
+				VoiceCommand cmd = findCommand(command);
 				if (cmd != null) {
 					if (listening || cmd.ExecuteAlways) {
 						try {
-							cmd.Callback();
+							cmd.Callback(new VoiceCommandRecognizedEvent(parameters));
 						} catch (Exception e) {
 							VoiceCommandNamespace ns = Namespaces.FirstOrDefault(n => n.Commands.Contains(cmd));
 							Debug.LogError(string.Format("[VoiceCommander] error while executing command: {0}/{1}", ns.Id, cmd.Id));
 							Debug.LogException(e);
 						}
 					} else {
-						Debug.Log(string.Format("[VoiceCommander] not listening, ignoring command: {0}", text));
+						Debug.Log(string.Format("[VoiceCommander] not listening, ignoring command: {0}", packet.Data));
 					}
 				} else {
-					Debug.Log(string.Format("[VoiceCommander] unknown command received: {0}", text));
+					Debug.Log(string.Format("[VoiceCommander] unknown command received: {0}", packet.Data));
 				}
 			}
 		}
 
-		private VoiceCommand findCommand(string text) {
-			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
-				if (cmdEntry.Value.Contains(text)) {
-					string[] parts = cmdEntry.Key.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-					string nsId = parts[0];
-					string cmdId = parts[1];
-					return Namespaces.FirstOrDefault(n => n.Id == nsId).Commands.FirstOrDefault(c => c.Id == cmdId);
+		private VoiceCommand findCommand(string fullCommandId) {
+			string[] parts = fullCommandId.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+			string nsId = parts[0];
+			string cmdId = parts[1];
+
+			foreach (VoiceCommandNamespace ns in Namespaces) {
+				if (ns.Id == nsId) {
+					foreach (VoiceCommand cmd in ns.Commands) {
+						if (cmd.Id == cmdId) {
+							return cmd;
+						}
+					}
 				}
 			}
 			return null;
@@ -223,11 +238,42 @@ namespace VoiceCommander {
 		private void updateCommandsOnServer() {
 			sendPacketToServer(new VoicePacket(PacketType.CLEAR_COMMANDS));
 
+			if (!string.IsNullOrEmpty(yawText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_YAW_COMMAND, yawText));
+			}
+			if (!string.IsNullOrEmpty(pitchText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_PITCH_COMMAND, pitchText));
+			}
+			if (!string.IsNullOrEmpty(rollText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_ROLL_COMMAND, rollText));
+			}
+
+			if (!string.IsNullOrEmpty(progradeText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_PROGRADE_COMMAND, progradeText));
+			}
+			if (!string.IsNullOrEmpty(retrogradeText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_RETROGRADE_COMMAND, retrogradeText));
+			}
+			if (!string.IsNullOrEmpty(normalText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_NORMAL_COMMAND, normalText));
+			}
+			if (!string.IsNullOrEmpty(antiNormalText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_ANTI_NORMAL_COMMAND, antiNormalText));
+			}
+			if (!string.IsNullOrEmpty(radialText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_RADIAL_COMMAND, radialText));
+			}
+			if (!string.IsNullOrEmpty(antiRadialText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_ANTI_RADIAL_COMMAND, antiRadialText));
+			}
+
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
 				foreach (string text in cmdEntry.Value) {
-					sendPacketToServer(new VoicePacket(PacketType.ADD_COMMAND, text));
+					sendPacketToServer(new VoicePacket(PacketType.ADD_COMMAND, cmdEntry.Key + "|" + text));
 				}
 			}
+
+			sendPacketToServer(new VoicePacket(PacketType.END_OF_COMMANDS));
 		}
 
 		private void sendPacketToServer(VoicePacket packet) {
@@ -251,7 +297,7 @@ namespace VoiceCommander {
 				Dictionary<VoiceCommand, string> dlgTexts = new Dictionary<VoiceCommand, string>();
 				foreach (VoiceCommandNamespace ns in VoiceCommander.Instance.Namespaces) {
 					foreach (VoiceCommand cmd in ns.Commands) {
-						string fullCommandId = ns.Id + "|" + cmd.Id;
+						string fullCommandId = ns.Id + "/" + cmd.Id;
 						string dlgText = string.Empty;
 						if (texts.ContainsKey(fullCommandId)) {
 							dlgText = string.Join("\n", texts[fullCommandId].ToArray());
@@ -259,31 +305,56 @@ namespace VoiceCommander {
 						dlgTexts.Add(cmd, dlgText);
 					}
 				}
-				settingsWindow = new SettingsWindow(dlgTexts, () => {
-					dlgTexts = settingsWindow.Texts;
-					foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
-						VoiceCommand cmd = entry.Key;
-						List<string> cmdTexts = new List<string>(entry.Value.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
-						VoiceCommandNamespace ns = Namespaces.FirstOrDefault(n => n.Commands.Contains(cmd));
-						string fullCommandId = ns.Id + "|" + cmd.Id;
-						texts[fullCommandId] = cmdTexts;
-					}
+				settingsWindow = new SettingsWindow(dlgTexts,
+					yawText, pitchText, rollText,
+					progradeText, retrogradeText, normalText, antiNormalText, radialText, antiRadialText,
+					() => {
+						yawText = settingsWindow.YawText;
+						pitchText = settingsWindow.PitchText;
+						rollText = settingsWindow.RollText;
 
-					settingsWindow = null;
+						progradeText = settingsWindow.ProgradeText;
+						retrogradeText = settingsWindow.RetrogradeText;
+						normalText = settingsWindow.NormalText;
+						antiNormalText = settingsWindow.AntiNormalText;
+						radialText = settingsWindow.RadialText;
+						antiRadialText = settingsWindow.AntiRadialText;
 
-					saveSettings();
-					updateCommandsOnServer();
-				}, () => {
-					settingsWindow = null;
-				});
+						dlgTexts = settingsWindow.Texts;
+						foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
+							VoiceCommand cmd = entry.Key;
+							List<string> cmdTexts = new List<string>(entry.Value.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+							VoiceCommandNamespace ns = Namespaces.FirstOrDefault(n => n.Commands.Contains(cmd));
+							string fullCommandId = ns.Id + "/" + cmd.Id;
+							texts[fullCommandId] = cmdTexts;
+						}
+
+						settingsWindow = null;
+
+						saveSettings();
+						updateCommandsOnServer();
+					}, () => {
+						settingsWindow = null;
+					});
 			}
 		}
 
 		private void loadSettings() {
 			ConfigNode rootNode = ConfigNode.Load(SETTINGS_FILE) ?? new ConfigNode();
 
-			texts = new Dictionary<string, List<string>>();
 			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
+			yawText = textsNode.get("yaw", (string) null);
+			pitchText = textsNode.get("pitch", (string) null);
+			rollText = textsNode.get("roll", (string) null);
+
+			progradeText = textsNode.get("prograde", (string) null);
+			retrogradeText = textsNode.get("retrograde", (string) null);
+			normalText = textsNode.get("normal", (string) null);
+			antiNormalText = textsNode.get("antiNormal", (string) null);
+			radialText = textsNode.get("radial", (string) null);
+			antiRadialText = textsNode.get("antiRadial", (string) null);
+
+			texts = new Dictionary<string, List<string>>();
 			foreach (ConfigNode nsNode in textsNode.nodes) {
 				string ns = nsNode.name;
 				foreach (ConfigNode.Value value in nsNode.values) {
@@ -291,7 +362,7 @@ namespace VoiceCommander {
 					string text = value.value;
 
 					List<string> cmdTexts;
-					string fullCommandId = ns + "|" + cmd;
+					string fullCommandId = ns + "/" + cmd;
 					if (texts.ContainsKey(fullCommandId)) {
 						cmdTexts = texts[fullCommandId];
 					} else {
@@ -306,13 +377,45 @@ namespace VoiceCommander {
 		private void saveSettings() {
 			ConfigNode rootNode = new ConfigNode();
 			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
+
+			if (!string.IsNullOrEmpty(yawText)) {
+				textsNode.overwrite("yaw", yawText);
+			}
+			if (!string.IsNullOrEmpty(pitchText)) {
+				textsNode.overwrite("pitch", pitchText);
+			}
+			if (!string.IsNullOrEmpty(rollText)) {
+				textsNode.overwrite("roll", rollText);
+			}
+
+			if (!string.IsNullOrEmpty(progradeText)) {
+				textsNode.overwrite("prograde", progradeText);
+			}
+			if (!string.IsNullOrEmpty(retrogradeText)) {
+				textsNode.overwrite("retrograde", retrogradeText);
+			}
+			if (!string.IsNullOrEmpty(normalText)) {
+				textsNode.overwrite("normal", normalText);
+			}
+			if (!string.IsNullOrEmpty(antiNormalText)) {
+				textsNode.overwrite("antiNormal", antiNormalText);
+			}
+			if (!string.IsNullOrEmpty(radialText)) {
+				textsNode.overwrite("radial", radialText);
+			}
+			if (!string.IsNullOrEmpty(antiRadialText)) {
+				textsNode.overwrite("antiRadial", antiRadialText);
+			}
+
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
-				string[] parts = cmdEntry.Key.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+				string[] parts = cmdEntry.Key.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 				string ns = parts[0];
 				string cmd = parts[1];
 				ConfigNode nsNode = textsNode.getOrCreateNode(ns);
 				foreach (string text in cmdEntry.Value) {
-					nsNode.AddValue(cmd, text);
+					if (text != string.Empty) {
+						nsNode.AddValue(cmd, text);
+					}
 				}
 			}
 

@@ -63,7 +63,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>del $(TargetDir)$(TargetFileName).config
+    <PostBuildEvent>del $(TargetDir)$(TargetFileName).config $(TargetDir)$(TargetName).pdb
 
 </PostBuildEvent>
   </PropertyGroup>

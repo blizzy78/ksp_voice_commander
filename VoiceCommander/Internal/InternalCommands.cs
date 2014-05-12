@@ -37,9 +37,9 @@ namespace VoiceCommander {
 
 		internal InternalCommands() {
 			Namespace = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
-			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", () => VoiceCommander.Instance.toggleListen());
+			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", (e) => VoiceCommander.Instance.toggleListen());
 			toggleListenCmd.ExecuteAlways = true;
-			Namespace.AddCommand(toggleListenCmd);
+			Namespace += toggleListenCmd;
 		}
 	}
 }

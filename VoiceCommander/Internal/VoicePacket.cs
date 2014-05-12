@@ -32,7 +32,17 @@ namespace VoiceCommander {
 	public enum PacketType {
 		SPEECH_RECOGNIZED = 1,
 		CLEAR_COMMANDS = 2,
-		ADD_COMMAND = 3
+		END_OF_COMMANDS = 3,
+		ADD_COMMAND = 4,
+		SET_YAW_COMMAND = 5,
+		SET_PITCH_COMMAND = 6,
+		SET_ROLL_COMMAND = 7,
+		SET_PROGRADE_COMMAND = 8,
+		SET_RETROGRADE_COMMAND = 9,
+		SET_NORMAL_COMMAND = 10,
+		SET_ANTI_NORMAL_COMMAND = 11,
+		SET_RADIAL_COMMAND = 12,
+		SET_ANTI_RADIAL_COMMAND = 13
 	}
 
 	public class VoicePacket {
@@ -46,10 +56,15 @@ namespace VoiceCommander {
 			private set;
 		}
 
+		public string PacketDataString {
+			get {
+				return ((int) Type) + "|" + (Data ?? string.Empty);
+			}
+		}
+
 		public byte[] PacketData {
 			get {
-				string dataStr = ((int) Type) + "|" + (Data ?? string.Empty);
-				return Encoding.UTF8.GetBytes(dataStr);
+				return Encoding.UTF8.GetBytes(PacketDataString);
 			}
 		}
 

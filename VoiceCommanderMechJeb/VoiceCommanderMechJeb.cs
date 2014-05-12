@@ -40,13 +40,9 @@ namespace VoiceCommanderMechJeb {
 			Debug.Log("[VoiceCommanderMechJeb] registering commands");
 
 			ns = new VoiceCommandNamespace("mechJeb", "MechJeb");
-			ns.AddCommand(new VoiceCommand("turnPrograde", "Turn Prograde", () => attitude(new Vector3d(0, 0, 1))));
-			ns.AddCommand(new VoiceCommand("turnRetrograde", "Turn Retrograde", () => attitude(new Vector3d(0, 0, -1))));
-			ns.AddCommand(new VoiceCommand("turnNormal", "Turn Normal", () => attitude(new Vector3d(1, 0, 0))));
-			ns.AddCommand(new VoiceCommand("turnAntinormal", "Turn Anti-Normal", () => attitude(new Vector3d(-1, 0, 0))));
-			ns.AddCommand(new VoiceCommand("turnRadial", "Turn Radial", () => attitude(new Vector3d(0, 1, 0))));
-			ns.AddCommand(new VoiceCommand("turnAntiradial", "Turn Anti-Radial", () => attitude(new Vector3d(0, -1, 0))));
-			ns.AddCommand(new VoiceCommand("killRotation", "Kill Rotation", killRotation));
+			ns += new VoiceCommand("turnFlightDirection", "Turn into a Flight Direction", turnFlightDirection);
+			ns += new VoiceCommand("killRotation", "Kill Rotation", killRotation);
+			ns += new VoiceCommand("turnAxis", "Turn About an Axis", turnAxis);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -56,6 +52,33 @@ namespace VoiceCommanderMechJeb {
 			VoiceCommander.VoiceCommander.Instance.RemoveNamespace(ns);
 		}
 
+		private void turnFlightDirection(VoiceCommandRecognizedEvent @event) {
+			Vector3d direction = Vector3d.zero;
+			switch (@event.Parameters["flightDirection"]) {
+				case "prograde":
+					direction = Vector3d.forward;
+					break;
+				case "retrograde":
+					direction = Vector3d.back;
+					break;
+				case "normal":
+					direction = Vector3d.left;
+					break;
+				case "antiNormal":
+					direction = Vector3d.right;
+					break;
+				case "radial":
+					direction = Vector3d.up;
+					break;
+				case "antiRadial":
+					direction = Vector3d.down;
+					break;
+			}
+			if (direction != Vector3d.zero) {
+				attitude(direction);
+			}
+		}
+
 		private void attitude(Vector3d direction) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
@@ -63,7 +86,7 @@ namespace VoiceCommanderMechJeb {
 			}
 		}
 
-		private void killRotation() {
+		private void killRotation(VoiceCommandRecognizedEvent @event) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
 				mechJeb.attitude.users.Remove(this);
@@ -71,8 +94,42 @@ namespace VoiceCommanderMechJeb {
 			}
 		}
 
+		private void turnAxis(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				string axis = @event.Parameters["axis"];
+				string plusMinus = @event.Parameters["plusMinus"];
+				string degreesNumber = @event.Parameters["degreesNumber"];
+				int degrees = int.Parse(degreesNumber);
+				if (plusMinus == "-") {
+					degrees = -degrees;
+				}
+
+				Vector3 rotationAxis = Vector3.zero;
+				switch (axis) {
+					case "yaw":
+						rotationAxis = Vector3d.down.xzy;
+						break;
+					case "pitch":
+						rotationAxis = Vector3d.right.xzy;
+						break;
+					case "roll":
+						rotationAxis = Vector3d.back.xzy;
+						break;
+				}
+
+				Transform transform = mechJeb.vessel.GetTransform();
+				Vector3 worldRotationAxis = transform.TransformDirection(rotationAxis);
+				Quaternion delta = Quaternion.AngleAxis(degrees, worldRotationAxis);
+				Quaternion currentRotation = Quaternion.LookRotation(transform.up, -transform.forward); //transform.rotation;
+				Quaternion targetRotation = delta * currentRotation;
+				mechJeb.attitude.attitudeTo(targetRotation, AttitudeReference.INERTIAL, this);
+			}
+		}
+
 		private MechJebCore getMechJeb() {
-			return FlightGlobals.ActiveVessel.FindPartModulesImplementing<MechJebCore>().FirstOrDefault();
+			// no need to check HighLogic.LoadedSceneIsFlight here
+			return FlightGlobals.ActiveVessel.GetMasterMechJeb();
 		}
 	}
 }

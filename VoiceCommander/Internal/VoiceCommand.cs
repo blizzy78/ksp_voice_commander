@@ -30,7 +30,7 @@ using System.Text;
 
 namespace VoiceCommander {
 	public partial class VoiceCommand {
-		internal Action Callback {
+		internal Action<VoiceCommandRecognizedEvent> Callback {
 			get;
 			private set;
 		}

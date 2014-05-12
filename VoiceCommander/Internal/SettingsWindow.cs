@@ -31,7 +31,47 @@ using UnityEngine;
 
 namespace VoiceCommander {
 	internal class SettingsWindow {
+		private const string COMMANDS_DOC_URL = "http://bit.ly/1lnCdEv";
+
 		internal Dictionary<VoiceCommand, string> Texts {
+			get;
+			private set;
+		}
+
+		internal string YawText {
+			get;
+			private set;
+		}
+		internal string PitchText {
+			get;
+			private set;
+		}
+		internal string RollText {
+			get;
+			private set;
+		}
+
+		internal string ProgradeText {
+			get;
+			private set;
+		}
+		internal string RetrogradeText {
+			get;
+			private set;
+		}
+		internal string NormalText {
+			get;
+			private set;
+		}
+		internal string AntiNormalText {
+			get;
+			private set;
+		}
+		internal string RadialText {
+			get;
+			private set;
+		}
+		internal string AntiRadialText {
 			get;
 			private set;
 		}
@@ -42,8 +82,24 @@ namespace VoiceCommander {
 		private Rect rect = new Rect(100, 100, 0, 0);
 		private Vector2 scrollPos = new Vector2(0, 0);
 
-		internal SettingsWindow(Dictionary<VoiceCommand, string> texts, Action onOk, Action onCancel) {
+		internal SettingsWindow(Dictionary<VoiceCommand, string> texts,
+			string yawText, string pitchText, string rollText,
+			string progradeText, string retrogradeText, string normalText, string antiNormalText, string radialText, string antiRadialText,
+			Action onOk, Action onCancel) {
+
 			this.Texts = texts;
+
+			this.YawText = yawText;
+			this.PitchText = pitchText;
+			this.RollText = rollText;
+
+			this.ProgradeText = progradeText;
+			this.RetrogradeText = retrogradeText;
+			this.NormalText = normalText;
+			this.AntiNormalText = antiNormalText;
+			this.RadialText = radialText;
+			this.AntiRadialText = antiRadialText;
+
 			this.onOk = onOk;
 			this.onCancel = onCancel;
 		}
@@ -55,12 +111,85 @@ namespace VoiceCommander {
 		private void drawContents() {
 			GUILayout.BeginVertical();
 
-			GUILayout.Label("For each command, you can configure the necessary text to speak here. You may specify multiple texts for each command, each on a single line.");
-			GUILayout.Label("Note: Some of the commands may not be applicable to every game scene.");
-
-			scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Width(400), GUILayout.Height(400));
+			scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Width(450), GUILayout.Height(350));
 
 			GUILayout.BeginVertical();
+			drawMacroTexts();
+			GUILayout.Space(10);
+			drawCommandTexts();
+			GUILayout.EndVertical();
+
+			GUILayout.EndScrollView();
+
+			if (VoiceCommander.Instance.UpdateAvailable) {
+				GUILayout.Space(10);
+				Color oldColor = GUI.color;
+				GUI.color = Color.yellow;
+				GUILayout.Label("An update of the Voice Commander plugin is available.");
+				GUI.color = oldColor;
+			}
+
+			GUILayout.Space(10);
+
+			drawButtons();
+
+			GUILayout.EndVertical();
+
+			GUI.DragWindow();
+		}
+
+		private void drawMacroTexts() {
+			GUILayout.Label("Specify the texts to speak for general words here. These are used in macros.");
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Yaw:", GUILayout.Width(100));
+			YawText = GUILayout.TextField(YawText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Pitch:", GUILayout.Width(100));
+			PitchText = GUILayout.TextField(PitchText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Roll:", GUILayout.Width(100));
+			RollText = GUILayout.TextField(RollText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Prograde:", GUILayout.Width(100));
+			ProgradeText = GUILayout.TextField(ProgradeText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Retrograde:", GUILayout.Width(100));
+			RetrogradeText = GUILayout.TextField(RetrogradeText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Normal:", GUILayout.Width(100));
+			NormalText = GUILayout.TextField(NormalText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Anti-normal:", GUILayout.Width(100));
+			AntiNormalText = GUILayout.TextField(AntiNormalText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Radial:", GUILayout.Width(100));
+			RadialText = GUILayout.TextField(RadialText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Anti-radial:", GUILayout.Width(100));
+			AntiRadialText = GUILayout.TextField(AntiRadialText ?? string.Empty);
+			GUILayout.EndHorizontal();
+		}
+
+		private void drawCommandTexts() {
+			GUILayout.Label("For each command, you can configure the necessary text to speak here. You may specify multiple texts for each command, each on a single line.");
+			GUILayout.Label("Note: Some of the commands may not be applicable to every game scene.");
 
 			foreach (VoiceCommandNamespace ns in VoiceCommander.Instance.Namespaces) {
 				foreach (VoiceCommand cmd in ns.Commands) {
@@ -68,23 +197,14 @@ namespace VoiceCommander {
 					Texts[cmd] = GUILayout.TextArea(Texts[cmd], GUILayout.Height(45));
 				}
 			}
+		}
 
-			GUILayout.EndVertical();
-
-			GUILayout.EndScrollView();
-
-			if (VoiceCommander.Instance.UpdateAvailable) {
-				GUILayout.Space(5);
-				Color oldColor = GUI.color;
-				GUI.color = Color.yellow;
-				GUILayout.Label("An update of this plugin is available.");
-				GUI.color = oldColor;
-			}
-
-			GUILayout.Space(10);
-
+		private void drawButtons() {
 			GUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
+			if (GUILayout.Button("Open Documentation")) {
+				Application.OpenURL(COMMANDS_DOC_URL);
+			}
 			if (GUILayout.Button("OK")) {
 				onOk();
 			}
@@ -92,10 +212,6 @@ namespace VoiceCommander {
 				onCancel();
 			}
 			GUILayout.EndHorizontal();
-
-			GUILayout.EndVertical();
-
-			GUI.DragWindow();
 		}
 	}
 }

@@ -30,6 +30,11 @@ using System.Text;
 
 namespace VoiceCommander {
 	public class VoiceCommandNamespace {
+		public static VoiceCommandNamespace operator +(VoiceCommandNamespace ns, VoiceCommand cmd) {
+			ns.AddCommand(cmd);
+			return ns;
+		}
+
 		public string Id {
 			get;
 			private set;
@@ -52,7 +57,7 @@ namespace VoiceCommander {
 			Commands = new List<VoiceCommand>();
 		}
 
-		public void AddCommand(VoiceCommand command) {
+		private void AddCommand(VoiceCommand command) {
 			Commands.Add(command);
 		}
 	}

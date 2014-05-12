@@ -40,7 +40,7 @@ namespace VoiceCommander {
 			private set;
 		}
 
-		public VoiceCommand(string id, string label, Action callback) {
+		public VoiceCommand(string id, string label, Action<VoiceCommandRecognizedEvent> callback) {
 			this.Id = id;
 			this.Label = label;
 			this.Callback = callback;
