@@ -54,6 +54,9 @@ namespace VoiceCommander {
 			Namespace += new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", (e) => toggleActionGroup(KSPActionGroup.Abort));
 			Namespace += new VoiceCommand("actionGroupSAS", "Toggle SAS", (e) => toggleActionGroup(KSPActionGroup.SAS));
 			Namespace += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
+			VoiceCommand pauseCommand = new VoiceCommand("pause", "Toggle Game Pause", pause);
+			pauseCommand.ExecuteAlways = true;
+			Namespace += pauseCommand;
 		}
 
 		private void quickSave(VoiceCommandRecognizedEvent @event) {
@@ -148,6 +151,16 @@ namespace VoiceCommander {
 		private void toggleActionGroup(KSPActionGroup group) {
 			if (HighLogic.LoadedSceneIsFlight) {
 				FlightGlobals.ActiveVessel.ActionGroups.ToggleGroup(group);
+			}
+		}
+
+		private void pause(VoiceCommandRecognizedEvent @event) {
+			if (HighLogic.LoadedSceneIsFlight) {
+				if (FlightDriver.Pause) {
+					PauseMenu.Close();
+				} else {
+					PauseMenu.Display();
+				}
 			}
 		}
 	}

@@ -187,7 +187,7 @@ namespace VoiceCommander {
 				string command = parameters["command"];
 				VoiceCommand cmd = findCommand(command);
 				if (cmd != null) {
-					if (listening || cmd.ExecuteAlways) {
+					if ((listening && !isGamePaused()) || cmd.ExecuteAlways) {
 						try {
 							cmd.Callback(new VoiceCommandRecognizedEvent(parameters));
 						} catch (Exception e) {
@@ -201,6 +201,14 @@ namespace VoiceCommander {
 				} else {
 					Debug.Log(string.Format("[VoiceCommander] unknown command received: {0}", packet.Data));
 				}
+			}
+		}
+
+		private bool isGamePaused() {
+			if (HighLogic.LoadedSceneIsFlight) {
+				return FlightDriver.Pause;
+			} else {
+				return false;
 			}
 		}
 

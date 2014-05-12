@@ -1,7 +1,8 @@
 ﻿1.1.0
-- Added new commands:
-  - Toggle SAS.
-  - Toggle RCS.
+- Added a lot of new commands.
+- Added a macro mechanism to avoid having lots of similar commands. You can now say, "yaw + 10"
+  or "roll - 90" to rotate about the specified axes, all using a single command (and therefore
+  the same syntax.)
 
 1.0.0, 2014-05-11
 - Initial public release.
