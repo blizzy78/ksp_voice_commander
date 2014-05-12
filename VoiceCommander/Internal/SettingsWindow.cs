@@ -50,7 +50,6 @@ namespace VoiceCommander {
 			get;
 			private set;
 		}
-
 		internal string ProgradeText {
 			get;
 			private set;
@@ -75,6 +74,14 @@ namespace VoiceCommander {
 			get;
 			private set;
 		}
+		internal string ApoapsisText {
+			get;
+			private set;
+		}
+		internal string PeriapsisText {
+			get;
+			private set;
+		}
 
 		private Action onOk;
 		private Action onCancel;
@@ -85,6 +92,7 @@ namespace VoiceCommander {
 		internal SettingsWindow(Dictionary<VoiceCommand, string> texts,
 			string yawText, string pitchText, string rollText,
 			string progradeText, string retrogradeText, string normalText, string antiNormalText, string radialText, string antiRadialText,
+			string apoapsisText, string periapsisText,
 			Action onOk, Action onCancel) {
 
 			this.Texts = texts;
@@ -184,6 +192,16 @@ namespace VoiceCommander {
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Anti-radial:", GUILayout.Width(100));
 			AntiRadialText = GUILayout.TextField(AntiRadialText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Apoapsis:", GUILayout.Width(100));
+			ApoapsisText = GUILayout.TextField(ApoapsisText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Periapsis:", GUILayout.Width(100));
+			PeriapsisText = GUILayout.TextField(PeriapsisText ?? string.Empty);
 			GUILayout.EndHorizontal();
 		}
 

@@ -72,6 +72,8 @@ namespace VoiceCommander {
 		private string antiNormalText;
 		private string radialText;
 		private string antiRadialText;
+		private string apoapsisText;
+		private string periapsisText;
 		private InternalCommands internalCommands = new InternalCommands();
 		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
@@ -255,7 +257,6 @@ namespace VoiceCommander {
 			if (!string.IsNullOrEmpty(rollText)) {
 				sendPacketToServer(new VoicePacket(PacketType.SET_ROLL_COMMAND, rollText));
 			}
-
 			if (!string.IsNullOrEmpty(progradeText)) {
 				sendPacketToServer(new VoicePacket(PacketType.SET_PROGRADE_COMMAND, progradeText));
 			}
@@ -273,6 +274,12 @@ namespace VoiceCommander {
 			}
 			if (!string.IsNullOrEmpty(antiRadialText)) {
 				sendPacketToServer(new VoicePacket(PacketType.SET_ANTI_RADIAL_COMMAND, antiRadialText));
+			}
+			if (!string.IsNullOrEmpty(apoapsisText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_APOAPSIS_COMMAND, apoapsisText));
+			}
+			if (!string.IsNullOrEmpty(periapsisText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_PERIAPSIS_COMMAND, periapsisText));
 			}
 
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
@@ -316,6 +323,7 @@ namespace VoiceCommander {
 				settingsWindow = new SettingsWindow(dlgTexts,
 					yawText, pitchText, rollText,
 					progradeText, retrogradeText, normalText, antiNormalText, radialText, antiRadialText,
+					apoapsisText, periapsisText,
 					() => {
 						yawText = settingsWindow.YawText;
 						pitchText = settingsWindow.PitchText;
@@ -327,6 +335,8 @@ namespace VoiceCommander {
 						antiNormalText = settingsWindow.AntiNormalText;
 						radialText = settingsWindow.RadialText;
 						antiRadialText = settingsWindow.AntiRadialText;
+						apoapsisText = settingsWindow.ApoapsisText;
+						periapsisText = settingsWindow.PeriapsisText;
 
 						dlgTexts = settingsWindow.Texts;
 						foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
@@ -354,13 +364,14 @@ namespace VoiceCommander {
 			yawText = textsNode.get("yaw", (string) null);
 			pitchText = textsNode.get("pitch", (string) null);
 			rollText = textsNode.get("roll", (string) null);
-
 			progradeText = textsNode.get("prograde", (string) null);
 			retrogradeText = textsNode.get("retrograde", (string) null);
 			normalText = textsNode.get("normal", (string) null);
 			antiNormalText = textsNode.get("antiNormal", (string) null);
 			radialText = textsNode.get("radial", (string) null);
 			antiRadialText = textsNode.get("antiRadial", (string) null);
+			apoapsisText = textsNode.get("apoapsis", (string) null);
+			periapsisText = textsNode.get("periapsis", (string) null);
 
 			texts = new Dictionary<string, List<string>>();
 			foreach (ConfigNode nsNode in textsNode.nodes) {
@@ -395,7 +406,6 @@ namespace VoiceCommander {
 			if (!string.IsNullOrEmpty(rollText)) {
 				textsNode.overwrite("roll", rollText);
 			}
-
 			if (!string.IsNullOrEmpty(progradeText)) {
 				textsNode.overwrite("prograde", progradeText);
 			}
@@ -413,6 +423,12 @@ namespace VoiceCommander {
 			}
 			if (!string.IsNullOrEmpty(antiRadialText)) {
 				textsNode.overwrite("antiRadial", antiRadialText);
+			}
+			if (!string.IsNullOrEmpty(apoapsisText)) {
+				textsNode.overwrite("apoapsis", apoapsisText);
+			}
+			if (!string.IsNullOrEmpty(periapsisText)) {
+				textsNode.overwrite("periapsis", periapsisText);
 			}
 
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {

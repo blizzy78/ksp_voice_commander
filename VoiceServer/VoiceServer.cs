@@ -71,6 +71,8 @@ namespace VoiceServer {
 		private string antiNormalText;
 		private string radialText;
 		private string antiRadialText;
+		private string apoapsisText;
+		private string periapsisText;
 		private int regularGroupNumber;
 		private int macroGroupNumber;
 
@@ -84,6 +86,12 @@ namespace VoiceServer {
 			get {
 				return !string.IsNullOrEmpty(progradeText) && !string.IsNullOrEmpty(retrogradeText) && !string.IsNullOrEmpty(normalText) &&
 					!string.IsNullOrEmpty(antiNormalText) && !string.IsNullOrEmpty(radialText) && !string.IsNullOrEmpty(antiRadialText);
+			}
+		}
+
+		private bool HaveApPeTexts {
+			get {
+				return !string.IsNullOrEmpty(apoapsisText) && !string.IsNullOrEmpty(periapsisText);
 			}
 		}
 
@@ -203,7 +211,6 @@ namespace VoiceServer {
 						rollText = packet.Data;
 						Console.WriteLine(string.Format("Set 'roll' command: {0}", packet.Data));
 						break;
-
 					case PacketType.SET_PROGRADE_COMMAND:
 						progradeText = packet.Data;
 						Console.WriteLine(string.Format("Set 'prograde' command: {0}", packet.Data));
@@ -227,6 +234,14 @@ namespace VoiceServer {
 					case PacketType.SET_ANTI_RADIAL_COMMAND:
 						antiRadialText = packet.Data;
 						Console.WriteLine(string.Format("Set 'anti-radial' command: {0}", packet.Data));
+						break;
+					case PacketType.SET_APOAPSIS_COMMAND:
+						apoapsisText = packet.Data;
+						Console.WriteLine(string.Format("Set 'apoapsis' command: {0}", packet.Data));
+						break;
+					case PacketType.SET_PERIAPSIS_COMMAND:
+						periapsisText = packet.Data;
+						Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
 						break;
 				}
 			} catch (Exception) {
@@ -346,6 +361,14 @@ namespace VoiceServer {
 							new SemanticResultValue(antiNormalText, "antiNormal"),
 							new SemanticResultValue(radialText, "radial"),
 							new SemanticResultValue(antiRadialText, "antiRadial"));
+					}
+					break;
+
+				case "apPe":
+					if (HaveApPeTexts) {
+						return new Choices(
+							new SemanticResultValue(apoapsisText, "ap"),
+							new SemanticResultValue(periapsisText, "pe"));
 					}
 					break;
 			}

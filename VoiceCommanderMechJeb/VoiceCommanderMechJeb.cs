@@ -45,6 +45,7 @@ namespace VoiceCommanderMechJeb {
 			ns += new VoiceCommand("turnAxis", "Turn About an Axis", turnAxis);
 			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", createManeuverNodeCircularize);
 			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
+			ns += new VoiceCommand("removeAllManeuverNodes", "Remove All Maneuver Nodes", removeAllManeuverNodes);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -132,10 +133,21 @@ namespace VoiceCommanderMechJeb {
 		private void createManeuverNodeCircularize(VoiceCommandRecognizedEvent @event) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
-				MechJebModuleManeuverPlanner planner = mechJeb.GetComputerModule<MechJebModuleManeuverPlanner>();
-				MechJebModuleManeuverPlanner.NodePlanningResult planResult = planner.PlanNode(
-					MechJebModuleManeuverPlanner.Operation.CIRCULARIZE, MechJebModuleManeuverPlanner.TimeReference.APOAPSIS,
-					0, 0, 0, 0, 0, 0, 0);
+				MechJebModuleManeuverPlanner.TimeReference time = MechJebModuleManeuverPlanner.TimeReference.COMPUTED;
+				switch (@event.Parameters["apPe"]) {
+					case "ap":
+						time = MechJebModuleManeuverPlanner.TimeReference.APOAPSIS;
+						break;
+					case "pe":
+						time = MechJebModuleManeuverPlanner.TimeReference.PERIAPSIS;
+						break;
+				}
+				if (time != MechJebModuleManeuverPlanner.TimeReference.COMPUTED) {
+					MechJebModuleManeuverPlanner planner = mechJeb.GetComputerModule<MechJebModuleManeuverPlanner>();
+					MechJebModuleManeuverPlanner.NodePlanningResult planResult = planner.PlanNode(
+						MechJebModuleManeuverPlanner.Operation.CIRCULARIZE, time,
+						0, 0, 0, 0, 0, 0, 0);
+				}
 			}
 		}
 
@@ -144,6 +156,13 @@ namespace VoiceCommanderMechJeb {
 			if (mechJeb != null) {
 				MechJebModuleNodeExecutor executor = mechJeb.GetComputerModule<MechJebModuleNodeExecutor>();
 				executor.ExecuteOneNode(this);
+			}
+		}
+
+		private void removeAllManeuverNodes(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				mechJeb.vessel.RemoveAllManeuverNodes();
 			}
 		}
 
