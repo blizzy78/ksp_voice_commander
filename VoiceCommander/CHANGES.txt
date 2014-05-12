@@ -1,8 +1,9 @@
 ﻿1.1.0
-- Added a lot of new commands.
+- Added new commands.
 - Added a macro mechanism to avoid having lots of similar commands. You can now say, "yaw + 10"
   or "roll - 90" to rotate about the specified axes, all using a single command (and therefore
-  the same syntax.)
+  the same syntax.) Note that the actual syntax is still up to you - it could also be as lengthy
+  as "rotate about the roll axis by - 90 degrees".
 
 1.0.0, 2014-05-11
 - Initial public release.

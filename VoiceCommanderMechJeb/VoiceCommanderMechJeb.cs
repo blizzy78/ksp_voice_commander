@@ -43,6 +43,8 @@ namespace VoiceCommanderMechJeb {
 			ns += new VoiceCommand("turnFlightDirection", "Turn into a Flight Direction", turnFlightDirection);
 			ns += new VoiceCommand("killRotation", "Kill Rotation", killRotation);
 			ns += new VoiceCommand("turnAxis", "Turn About an Axis", turnAxis);
+			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", createManeuverNodeCircularize);
+			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -124,6 +126,24 @@ namespace VoiceCommanderMechJeb {
 				Quaternion currentRotation = Quaternion.LookRotation(transform.up, -transform.forward); //transform.rotation;
 				Quaternion targetRotation = delta * currentRotation;
 				mechJeb.attitude.attitudeTo(targetRotation, AttitudeReference.INERTIAL, this);
+			}
+		}
+
+		private void createManeuverNodeCircularize(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				MechJebModuleManeuverPlanner planner = mechJeb.GetComputerModule<MechJebModuleManeuverPlanner>();
+				MechJebModuleManeuverPlanner.NodePlanningResult planResult = planner.PlanNode(
+					MechJebModuleManeuverPlanner.Operation.CIRCULARIZE, MechJebModuleManeuverPlanner.TimeReference.APOAPSIS,
+					0, 0, 0, 0, 0, 0, 0);
+			}
+		}
+
+		private void executeManeuverNode(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				MechJebModuleNodeExecutor executor = mechJeb.GetComputerModule<MechJebModuleNodeExecutor>();
+				executor.ExecuteOneNode(this);
 			}
 		}
 
