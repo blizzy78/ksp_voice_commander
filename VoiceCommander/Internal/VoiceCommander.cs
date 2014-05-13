@@ -328,7 +328,6 @@ namespace VoiceCommander {
 						yawText = settingsWindow.YawText;
 						pitchText = settingsWindow.PitchText;
 						rollText = settingsWindow.RollText;
-
 						progradeText = settingsWindow.ProgradeText;
 						retrogradeText = settingsWindow.RetrogradeText;
 						normalText = settingsWindow.NormalText;

@@ -100,13 +100,14 @@ namespace VoiceCommander {
 			this.YawText = yawText;
 			this.PitchText = pitchText;
 			this.RollText = rollText;
-
 			this.ProgradeText = progradeText;
 			this.RetrogradeText = retrogradeText;
 			this.NormalText = normalText;
 			this.AntiNormalText = antiNormalText;
 			this.RadialText = radialText;
 			this.AntiRadialText = antiRadialText;
+			this.ApoapsisText = apoapsisText;
+			this.PeriapsisText = periapsisText;
 
 			this.onOk = onOk;
 			this.onCancel = onCancel;
