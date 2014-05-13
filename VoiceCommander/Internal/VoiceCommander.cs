@@ -37,7 +37,7 @@ using Toolbar;
 namespace VoiceCommander {
 	[KSPAddonFixed(KSPAddon.Startup.MainMenu, true, typeof(VoiceCommander))]
 	public partial class VoiceCommander : MonoBehaviour {
-		internal const int VERSION = 2;
+		internal const int VERSION = 3;
 
 		private static readonly string SETTINGS_FILE = KSPUtil.ApplicationRootPath + "GameData/blizzy/VoiceCommander/settings.dat";
 		private const string HOST = "127.0.0.1";

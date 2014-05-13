@@ -1,4 +1,10 @@
-﻿1.1.0, 2014-05-12
+﻿1.1.1, 2014-05-13
+- Fixed a bug where the texts for "Apoapsis" and "Periapsis" were not saved correctly.
+- Recompiled VoiceCommanderMechJeb.dll using a newer version of MechJeb. This will prevent
+  KSP from crashing should an updated version of MechJeb be installed.
+  Note that you must use MechJeb 2.2.1 development build 255 or newer.
+
+1.1.0, 2014-05-12
 - Added new commands. See http://bit.ly/1lnCdEv for a complete list.
 - Added a macro mechanism to avoid having lots of similar commands. You can now say, "yaw + 10"
   or "roll - 90" to rotate about the specified axes, all using a single command (and therefore
