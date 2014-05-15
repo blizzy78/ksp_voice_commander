@@ -61,7 +61,7 @@ namespace VoiceServer {
 		private Choices degreesNumberChoices;
 		private Choices actionGroupNumberChoices;
 		private Choices percentNumberChoices;
-		private Dictionary<string, string> commands = new Dictionary<string, string>();
+		private Dictionary<string, List<string>> commands = new Dictionary<string, List<string>>();
 		private string yawText;
 		private string pitchText;
 		private string rollText;
@@ -200,8 +200,17 @@ namespace VoiceServer {
 					case PacketType.ADD_COMMAND:
 						lock (commands) {
 							string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
-							commands.Add(parts[0], parts[1]);
-							Console.WriteLine(string.Format("Command added: {0} ({1})", parts[1], parts[0]));
+							string fullCmdId = parts[0];
+							string text = parts[1];
+							List<string> cmdTexts;
+							if (commands.ContainsKey(fullCmdId)) {
+								cmdTexts = commands[fullCmdId];
+							} else {
+								cmdTexts = new List<string>();
+								commands.Add(fullCmdId, cmdTexts);
+							}
+							cmdTexts.Add(text);
+							Console.WriteLine(string.Format("Command added: {0} ({1})", text, fullCmdId));
 						}
 						break;
 
@@ -276,14 +285,16 @@ namespace VoiceServer {
 
 				commandGrammars.Clear();
 
-				foreach (KeyValuePair<string, string> cmdEntry in commands) {
-					GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(cmdEntry.Value);
-					if (commandGrammarBuilder != null) {
-						Grammar commandGrammar = new Grammar(commandGrammarBuilder);
-						commandGrammars.Add(commandGrammar, cmdEntry.Key);
-						Console.WriteLine(string.Format("Added engine command: {0}", cmdEntry.Value));
-					} else {
-						Console.WriteLine(string.Format("Couldn't parse command, ignoring: {0}", cmdEntry.Value));
+				foreach (KeyValuePair<string, List<string>> cmdEntry in commands) {
+					foreach (string text in cmdEntry.Value) {
+						GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(text);
+						if (commandGrammarBuilder != null) {
+							Grammar commandGrammar = new Grammar(commandGrammarBuilder);
+							commandGrammars.Add(commandGrammar, cmdEntry.Key);
+							Console.WriteLine(string.Format("Added engine command: {0}", text));
+						} else {
+							Console.WriteLine(string.Format("Couldn't parse command, ignoring: {0}", text));
+						}
 					}
 				}
 
