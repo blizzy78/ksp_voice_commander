@@ -193,6 +193,7 @@ namespace VoiceCommander {
 				VoiceCommand cmd = findCommand(command);
 				if (cmd != null) {
 					if ((listening && !isGamePaused()) || cmd.ExecuteAlways) {
+						button.Drawable = new InfoDrawable(button, cmd.Label);
 						try {
 							cmd.Callback(new VoiceCommandRecognizedEvent(parameters));
 						} catch (Exception e) {

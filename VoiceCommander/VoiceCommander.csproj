@@ -52,6 +52,7 @@
     <Compile Include="API\VoiceCommandRecognizedEvent.cs" />
     <Compile Include="Internal\CompatibilityChecker.cs" />
     <Compile Include="Internal\Extensions.cs" />
+    <Compile Include="Internal\InfoDrawable.cs" />
     <Compile Include="Internal\InstallChecker.cs" />
     <Compile Include="Internal\VoiceCommanderCommands.cs" />
     <Compile Include="Internal\KSPCommands.cs" />
