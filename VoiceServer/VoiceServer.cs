@@ -87,7 +87,8 @@ namespace VoiceServer {
 		private bool HaveFlightDirectionTexts {
 			get {
 				return !string.IsNullOrEmpty(progradeText) && !string.IsNullOrEmpty(retrogradeText) && !string.IsNullOrEmpty(normalText) &&
-					!string.IsNullOrEmpty(antiNormalText) && !string.IsNullOrEmpty(radialText) && !string.IsNullOrEmpty(antiRadialText);
+					!string.IsNullOrEmpty(antiNormalText) && !string.IsNullOrEmpty(radialText) && !string.IsNullOrEmpty(antiRadialText) &&
+					!string.IsNullOrEmpty(maneuverNodeText);
 			}
 		}
 
@@ -377,7 +378,8 @@ namespace VoiceServer {
 							new SemanticResultValue(normalText, "normal"),
 							new SemanticResultValue(antiNormalText, "antiNormal"),
 							new SemanticResultValue(radialText, "radial"),
-							new SemanticResultValue(antiRadialText, "antiRadial"));
+							new SemanticResultValue(antiRadialText, "antiRadial"),
+							new SemanticResultValue(maneuverNodeText, "maneuverNode"));
 					}
 					break;
 

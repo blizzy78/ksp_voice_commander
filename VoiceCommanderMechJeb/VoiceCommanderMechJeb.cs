@@ -65,6 +65,7 @@ namespace VoiceCommanderMechJeb {
 
 		private void turnFlightDirection(VoiceCommandRecognizedEvent @event) {
 			Vector3d direction = Vector3d.zero;
+			AttitudeReference reference = AttitudeReference.ORBIT;
 			switch (@event.Parameters["flightDirection"]) {
 				case "prograde":
 					direction = Vector3d.forward;
@@ -84,16 +85,21 @@ namespace VoiceCommanderMechJeb {
 				case "antiRadial":
 					direction = Vector3d.down;
 					break;
+				case "maneuverNode":
+					direction = Vector3d.forward;
+					reference = AttitudeReference.MANEUVER_NODE;
+					break;
+
 			}
 			if (direction != Vector3d.zero) {
-				attitude(direction);
+				attitude(direction, reference);
 			}
 		}
 
-		private void attitude(Vector3d direction) {
+		private void attitude(Vector3d direction, AttitudeReference reference) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
-				mechJeb.attitude.attitudeTo(direction, AttitudeReference.ORBIT, this);
+				mechJeb.attitude.attitudeTo(direction, reference, this);
 			}
 		}
 
