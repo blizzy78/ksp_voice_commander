@@ -42,6 +42,7 @@ namespace VoiceServer {
 		private const string HOST = "127.0.0.1";
 		private const int CLIENT_PORT = 48285;
 		private const int SERVER_PORT = 48286;
+		private const string GENERIC_TEST_COMMAND = "test 1 2 3";
 
 		private const string PLAIN_TEXT_PATTERN = "[^\\<\\>]+";
 		private const string REGULAR_TEXT_PATTERN = "\\s*(?<regular>" + PLAIN_TEXT_PATTERN + ")\\s*";
@@ -143,7 +144,7 @@ namespace VoiceServer {
 			startReceive();
 
 			Console.WriteLine("Listening... Press Ctrl+C to exit, or close the window.");
-			Console.WriteLine("You can say 'test 1 2 3' into your microphone to test now.");
+			Console.WriteLine(string.Format("You can say '{0}' into your microphone to test now.", GENERIC_TEST_COMMAND));
 
 			lock (runningMonitor) {
 				while (running) {
@@ -164,24 +165,28 @@ namespace VoiceServer {
 			Console.WriteLine(string.Format("Command recognized: {0} (confidence: {1}%)", result.Text, (result.Confidence * 100f).ToString("F1")));
 #endif
 
-			StringBuilder buf = new StringBuilder();
-			if (commandGrammars.ContainsKey(result.Grammar)) {
-				buf.Append("command=").Append(commandGrammars[result.Grammar])
-					.Append("|confidence=").Append(string.Format(CultureInfo.InvariantCulture, "{0}", result.Confidence));
-				foreach (string key in result.Semantics.Select(kv => kv.Key)) {
-					buf.Append("|").Append(key).Append("=").Append(result.Semantics[key].Value);
-				}
-				VoicePacket packet = new VoicePacket(PacketType.SPEECH_RECOGNIZED, buf.ToString());
+			if (result.Text != GENERIC_TEST_COMMAND) {
+				StringBuilder buf = new StringBuilder();
+				if (commandGrammars.ContainsKey(result.Grammar)) {
+					buf.Append("command=").Append(commandGrammars[result.Grammar])
+						.Append("|confidence=").Append(string.Format(CultureInfo.InvariantCulture, "{0}", result.Confidence));
+					foreach (string key in result.Semantics.Select(kv => kv.Key)) {
+						buf.Append("|").Append(key).Append("=").Append(result.Semantics[key].Value);
+					}
+					VoicePacket packet = new VoicePacket(PacketType.SPEECH_RECOGNIZED, buf.ToString());
 
 #if DEBUG
-				Console.WriteLine(string.Format("Sending command: {0}", packet.PacketDataString));
+					Console.WriteLine(string.Format("Sending command: {0}", packet.PacketDataString));
 #endif
-				byte[] data = packet.PacketData;
-				try {
-					client.Send(data, data.Length, clientEndPoint);
-				} catch (Exception) {
-					// ignore
+					byte[] data = packet.PacketData;
+					try {
+						client.Send(data, data.Length, clientEndPoint);
+					} catch (Exception) {
+						// ignore
+					}
 				}
+			} else {
+				Console.WriteLine("Test successful.");
 			}
 		}
 
@@ -194,138 +199,151 @@ namespace VoiceServer {
 				IPEndPoint senderEndPoint = new IPEndPoint(IPAddress.Any, 0);
 				byte[] data = client.EndReceive(result, ref senderEndPoint);
 				VoicePacket packet = VoicePacket.FromPacket(data);
-				switch (packet.Type) {
-					case PacketType.CLEAR_COMMANDS:
-						lock (commands) {
+				lock (commands) {
+					switch (packet.Type) {
+						case PacketType.CLEAR_COMMANDS:
 							commands.Clear();
 							macroValueTexts.Clear();
-						}
+							yawText = null;
+							pitchText = null;
+							rollText = null;
+							progradeText = null;
+							retrogradeText = null;
+							normalText = null;
+							antiNormalText = null;
+							radialText = null;
+							antiRadialText = null;
+							apoapsisText = null;
+							periapsisText = null;
+							maneuverNodeText = null;
+							soiText = null;
 #if DEBUG
-						Console.WriteLine("Commands cleared.");
+							Console.WriteLine("Commands cleared.");
 #endif
-						break;
+							break;
 
-					case PacketType.ADD_COMMAND:
-						lock (commands) {
-							string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
-							string fullCmdId = parts[0];
-							string text = parts[1];
-							List<string> cmdTexts;
-							if (commands.ContainsKey(fullCmdId)) {
-								cmdTexts = commands[fullCmdId];
-							} else {
-								cmdTexts = new List<string>();
-								commands.Add(fullCmdId, cmdTexts);
+						case PacketType.ADD_COMMAND:
+							{
+								string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
+								string fullCmdId = parts[0];
+								string text = parts[1];
+								List<string> cmdTexts;
+								if (commands.ContainsKey(fullCmdId)) {
+									cmdTexts = commands[fullCmdId];
+								} else {
+									cmdTexts = new List<string>();
+									commands.Add(fullCmdId, cmdTexts);
+								}
+								cmdTexts.Add(text);
+#if DEBUG
+								Console.WriteLine(string.Format("Command added: {0} ({1})", text, fullCmdId));
+#endif
 							}
-							cmdTexts.Add(text);
-#if DEBUG
-							Console.WriteLine(string.Format("Command added: {0} ({1})", text, fullCmdId));
-#endif
-						}
-						break;
+							break;
 
-					case PacketType.ADD_MACRO_COMMAND:
-						lock (commands) {
-							string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
-							string fullMacroId = parts[0];
-							string text = parts[1];
-							List<string> valueTexts;
-							if (macroValueTexts.ContainsKey(fullMacroId)) {
-								valueTexts = macroValueTexts[fullMacroId];
-							} else {
-								valueTexts = new List<string>();
-								macroValueTexts.Add(fullMacroId, valueTexts);
+						case PacketType.ADD_MACRO_COMMAND:
+							{
+								string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
+								string fullMacroId = parts[0];
+								string text = parts[1];
+								List<string> valueTexts;
+								if (macroValueTexts.ContainsKey(fullMacroId)) {
+									valueTexts = macroValueTexts[fullMacroId];
+								} else {
+									valueTexts = new List<string>();
+									macroValueTexts.Add(fullMacroId, valueTexts);
+								}
+								valueTexts.Add(text);
+#if DEBUG
+								Console.WriteLine(string.Format("Macro value added: {0} ({1})", text, fullMacroId));
+#endif
 							}
-							valueTexts.Add(text);
-#if DEBUG
-							Console.WriteLine(string.Format("Macro value added: {0} ({1})", text, fullMacroId));
-#endif
-						}
-						break;
+							break;
 
-					case PacketType.END_OF_COMMANDS:
-						reloadCommandsInEngine();
-						Console.WriteLine("Reloaded commands.");
-						break;
+						case PacketType.END_OF_COMMANDS:
+							reloadCommandsInEngine();
+							Console.WriteLine("Reloaded commands.");
+							break;
 
-					case PacketType.SET_YAW_COMMAND:
-						yawText = packet.Data;
+						case PacketType.SET_YAW_COMMAND:
+							yawText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'yaw' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'yaw' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_PITCH_COMMAND:
-						pitchText = packet.Data;
+							break;
+						case PacketType.SET_PITCH_COMMAND:
+							pitchText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'pitch' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'pitch' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_ROLL_COMMAND:
-						rollText = packet.Data;
+							break;
+						case PacketType.SET_ROLL_COMMAND:
+							rollText = packet.Data;
+#if DEBUG	
+							Console.WriteLine(string.Format("Set 'roll' command: {0}", packet.Data));
+#endif
+							break;
+						case PacketType.SET_PROGRADE_COMMAND:
+							progradeText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'roll' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'prograde' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_PROGRADE_COMMAND:
-						progradeText = packet.Data;
+							break;
+						case PacketType.SET_RETROGRADE_COMMAND:
+							retrogradeText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'prograde' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'retrograde' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_RETROGRADE_COMMAND:
-						retrogradeText = packet.Data;
+							break;
+						case PacketType.SET_NORMAL_COMMAND:
+							normalText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'retrograde' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'normal' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_NORMAL_COMMAND:
-						normalText = packet.Data;
+							break;
+						case PacketType.SET_ANTI_NORMAL_COMMAND:
+							antiNormalText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'normal' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'anti-normal' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_ANTI_NORMAL_COMMAND:
-						antiNormalText = packet.Data;
+							break;
+						case PacketType.SET_RADIAL_COMMAND:
+							radialText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'anti-normal' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'radial' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_RADIAL_COMMAND:
-						radialText = packet.Data;
+							break;
+						case PacketType.SET_ANTI_RADIAL_COMMAND:
+							antiRadialText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'radial' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'anti-radial' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_ANTI_RADIAL_COMMAND:
-						antiRadialText = packet.Data;
+							break;
+						case PacketType.SET_APOAPSIS_COMMAND:
+							apoapsisText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'anti-radial' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'apoapsis' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_APOAPSIS_COMMAND:
-						apoapsisText = packet.Data;
+							break;
+						case PacketType.SET_PERIAPSIS_COMMAND:
+							periapsisText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'apoapsis' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_PERIAPSIS_COMMAND:
-						periapsisText = packet.Data;
+							break;
+						case PacketType.SET_MANEUVER_NODE_COMMAND:
+							maneuverNodeText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'maneuver node' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_MANEUVER_NODE_COMMAND:
-						maneuverNodeText = packet.Data;
+							break;
+						case PacketType.SET_SOI_COMMAND:
+							soiText = packet.Data;
 #if DEBUG
-						Console.WriteLine(string.Format("Set 'maneuver node' command: {0}", packet.Data));
+							Console.WriteLine(string.Format("Set 'sphere of influence' command: {0}", packet.Data));
 #endif
-						break;
-					case PacketType.SET_SOI_COMMAND:
-						soiText = packet.Data;
-#if DEBUG
-						Console.WriteLine(string.Format("Set 'sphere of influence' command: {0}", packet.Data));
-#endif
-						break;
+							break;
+					}
 				}
 			} catch (Exception) {
 				// ignore
@@ -336,45 +354,43 @@ namespace VoiceServer {
 		}
 
 		private void reloadCommandsInEngine() {
-			lock (commands) {
-				engine.RecognizeAsyncStop();
+			engine.RecognizeAsyncStop();
 
-				commandGrammars.Clear();
+			commandGrammars.Clear();
 
-				foreach (KeyValuePair<string, List<string>> cmdEntry in commands) {
-					foreach (string text in cmdEntry.Value) {
-						GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(text);
-						if (commandGrammarBuilder != null) {
-							Grammar commandGrammar = new Grammar(commandGrammarBuilder);
-							commandGrammars.Add(commandGrammar, cmdEntry.Key);
+			foreach (KeyValuePair<string, List<string>> cmdEntry in commands) {
+				foreach (string text in cmdEntry.Value) {
+					GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(text);
+					if (commandGrammarBuilder != null) {
+						Grammar commandGrammar = new Grammar(commandGrammarBuilder);
+						commandGrammars.Add(commandGrammar, cmdEntry.Key);
 #if DEBUG
-							Console.WriteLine(string.Format("Added engine command: {0}", text));
+						Console.WriteLine(string.Format("Added engine command: {0}", text));
 #endif
-						} else {
+					} else {
 #if DEBUG
-							Console.WriteLine(string.Format("Couldn't parse command, ignoring: {0}", text));
+						Console.WriteLine(string.Format("Couldn't parse command, ignoring: {0}", text));
 #endif
-						}
 					}
 				}
+			}
 
-				// generic test command
-				GrammarBuilder testCommandGrammarBuilder = createCommandGrammarBuilder("test 1 2 3");
-				Grammar testCommandGrammar = new Grammar(testCommandGrammarBuilder);
-				commandGrammars.Add(testCommandGrammar, "voiceCommander/voiceTest");
+			// generic test command
+			GrammarBuilder testCommandGrammarBuilder = createCommandGrammarBuilder("test 1 2 3");
+			Grammar testCommandGrammar = new Grammar(testCommandGrammarBuilder);
+			commandGrammars.Add(testCommandGrammar, "voiceCommander/voiceTest");
 
-				for (;;) {
-					try {
-						engine.UnloadAllGrammars();
-						foreach (Grammar grammar in commandGrammars.Keys) {
-							engine.LoadGrammar(grammar);
-						}
-						engine.RecognizeAsync(RecognizeMode.Multiple);
-						break;
-					} catch (Exception) {
-						// this can fail if the engine is still recognizing, just wait a bit and try again
-						Thread.Sleep(100);
+			for (;;) {
+				try {
+					engine.UnloadAllGrammars();
+					foreach (Grammar grammar in commandGrammars.Keys) {
+						engine.LoadGrammar(grammar);
 					}
+					engine.RecognizeAsync(RecognizeMode.Multiple);
+					break;
+				} catch (Exception) {
+					// this can fail if the engine is still recognizing, just wait a bit and try again
+					Thread.Sleep(100);
 				}
 			}
 		}
@@ -433,53 +449,63 @@ namespace VoiceServer {
 					return percentNumberChoices;
 
 				case "axis":
-					if (HaveAxisTexts) {
-						return new Choices(
-							new SemanticResultValue(yawText, "yaw"),
-							new SemanticResultValue(pitchText, "pitch"),
-							new SemanticResultValue(rollText, "roll"));
+					lock (commands) {
+						if (HaveAxisTexts) {
+							return new Choices(
+								new SemanticResultValue(yawText, "yaw"),
+								new SemanticResultValue(pitchText, "pitch"),
+								new SemanticResultValue(rollText, "roll"));
+						}
 					}
 					break;
 
 				case "flightDirection":
-					if (HaveFlightDirectionTexts) {
-						return new Choices(
-							new SemanticResultValue(progradeText, "prograde"),
-							new SemanticResultValue(retrogradeText, "retrograde"),
-							new SemanticResultValue(normalText, "normal"),
-							new SemanticResultValue(antiNormalText, "antiNormal"),
-							new SemanticResultValue(radialText, "radial"),
-							new SemanticResultValue(antiRadialText, "antiRadial"),
-							new SemanticResultValue(maneuverNodeText, "maneuverNode"));
+					lock (commands) {
+						if (HaveFlightDirectionTexts) {
+							return new Choices(
+								new SemanticResultValue(progradeText, "prograde"),
+								new SemanticResultValue(retrogradeText, "retrograde"),
+								new SemanticResultValue(normalText, "normal"),
+								new SemanticResultValue(antiNormalText, "antiNormal"),
+								new SemanticResultValue(radialText, "radial"),
+								new SemanticResultValue(antiRadialText, "antiRadial"),
+								new SemanticResultValue(maneuverNodeText, "maneuverNode"));
+						}
 					}
 					break;
 
 				case "apPe":
-					if (HaveApPeTexts) {
-						return new Choices(
-							new SemanticResultValue(apoapsisText, "ap"),
-							new SemanticResultValue(periapsisText, "pe"));
+					lock (commands) {
+						if (HaveApPeTexts) {
+							return new Choices(
+								new SemanticResultValue(apoapsisText, "ap"),
+								new SemanticResultValue(periapsisText, "pe"));
+						}
 					}
 					break;
 
 				case "warpTarget":
-					if (HaveWarpTargetTexts) {
-						return new Choices(
-							new SemanticResultValue(apoapsisText, "ap"),
-							new SemanticResultValue(periapsisText, "pe"),
-							new SemanticResultValue(maneuverNodeText, "maneuverNode"),
-							new SemanticResultValue(soiText, "SoI"));
+					lock (commands) {
+						if (HaveWarpTargetTexts) {
+							return new Choices(
+								new SemanticResultValue(apoapsisText, "ap"),
+								new SemanticResultValue(periapsisText, "pe"),
+								new SemanticResultValue(maneuverNodeText, "maneuverNode"),
+								new SemanticResultValue(soiText, "SoI"));
+						}
 					}
 					break;
 
 				default:
-					List<string> texts = getMacroValueTexts(macro);
-					if ((texts != null) && (texts.Count() > 0)) {
-						Choices choices = new Choices();
-						for (int i = 0; i < texts.Count(); i++) {
-							choices.Add(new SemanticResultValue(texts[i], i.ToString()));
+					lock (commands) {
+						List<string> texts = getMacroValueTexts(macro);
+						if ((texts != null) && (texts.Count() > 0)) {
+							Choices choices = new Choices();
+							for (int i = 0; i < texts.Count(); i++) {
+								choices.Add(new SemanticResultValue(texts[i], i.ToString()));
+							}
+							return choices;
 						}
-						return choices;
 					}
 					break;
 			}
