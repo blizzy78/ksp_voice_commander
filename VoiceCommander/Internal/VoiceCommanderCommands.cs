@@ -30,16 +30,21 @@ using System.Text;
 
 namespace VoiceCommander {
 	internal class InternalCommands {
-		internal VoiceCommandNamespace Namespace {
-			get;
-			private set;
-		}
+		private VoiceCommandNamespace ns;
 
 		internal InternalCommands() {
-			Namespace = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
+			ns = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
 			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", (e) => VoiceCommander.Instance.toggleListen());
 			toggleListenCmd.ExecuteAlways = true;
-			Namespace += toggleListenCmd;
+			ns += toggleListenCmd;
+		}
+
+		internal void register() {
+			VoiceCommander.Instance.AddNamespace(ns);
+		}
+
+		internal void unregister() {
+			VoiceCommander.Instance.RemoveNamespace(ns);
 		}
 	}
 }

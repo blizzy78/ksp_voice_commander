@@ -76,6 +76,7 @@ namespace VoiceCommander {
 		private string periapsisText;
 		private string maneuverNodeText;
 		private string soiText;
+		private Dictionary<string, string[]> macroValueTexts = new Dictionary<string, string[]>();
 		private InternalCommands internalCommands = new InternalCommands();
 		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
@@ -118,8 +119,8 @@ namespace VoiceCommander {
 				updateChecker = null;
 			};
 
-			AddNamespace(internalCommands.Namespace);
-			AddNamespace(kspCommands.Namespace);
+			internalCommands.register();
+			kspCommands.register();
 		}
 
 		private void startReceive() {
@@ -127,10 +128,10 @@ namespace VoiceCommander {
 		}
 
 		private void OnDestroy() {
-			RemoveNamespace(internalCommands.Namespace);
-			RemoveNamespace(kspCommands.Namespace);
-
 			saveSettings();
+
+			internalCommands.unregister();
+			kspCommands.unregister();
 
 			client.Close();
 			button.Destroy();
@@ -293,6 +294,12 @@ namespace VoiceCommander {
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
 				foreach (string text in cmdEntry.Value) {
 					sendPacketToServer(new VoicePacket(PacketType.ADD_COMMAND, cmdEntry.Key + "|" + text));
+				}
+			}
+
+			foreach (KeyValuePair<string, string[]> macroEntry in macroValueTexts) {
+				foreach (string text in macroEntry.Value) {
+					sendPacketToServer(new VoicePacket(PacketType.ADD_MACRO_COMMAND, macroEntry.Key + "|" + text));
 				}
 			}
 

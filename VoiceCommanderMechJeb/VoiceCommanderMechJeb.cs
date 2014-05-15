@@ -52,8 +52,10 @@ namespace VoiceCommanderMechJeb {
 			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
 			ns += new VoiceCommand("stopExecutingManeuverNode", "Stop Executing Maneuver Node", stopExecutingManeuverNode);
 			ns += new VoiceCommand("removeAllManeuverNodes", "Remove All Maneuver Nodes", removeAllManeuverNodes);
-			ns += new VoiceCommand("warpTo", "Time Warp to An Event", warpTo);
+			ns += new VoiceCommand("warpTo", "Time Warp to an Event", warpTo);
 			ns += new VoiceCommand("killWarp", "Kill Time Warping", killWarp);
+			ns += new VoiceCommand("setTarget", "Set Target", setTarget);
+			ns += new VoiceCommand("unsetTarget", "Unset Target", unsetTarget);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -227,6 +229,23 @@ namespace VoiceCommanderMechJeb {
 			if ((mechJeb != null) && warping) {
 				warping = false;
 				mechJeb.warp.MinimumWarp(true);
+			}
+		}
+
+		private void setTarget(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				if (@event.Parameters.ContainsKey("vesselName")) {
+					int idx = int.Parse(@event.Parameters["vesselName"]);
+					mechJeb.target.Set(VoiceCommander.VoiceCommander.Instance.Vessels[idx]);
+				}
+			}
+		}
+
+		private void unsetTarget(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				mechJeb.target.Unset();
 			}
 		}
 

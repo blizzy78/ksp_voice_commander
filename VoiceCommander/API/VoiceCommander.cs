@@ -36,6 +36,12 @@ namespace VoiceCommander {
 	public partial class VoiceCommander : MonoBehaviour {
 		public static VoiceCommander Instance;
 
+		public Vessel[] Vessels {
+			get;
+			// KSPCommands sets this for <vesselName>
+			internal set;
+		}
+
 		public void AddNamespace(VoiceCommandNamespace ns) {
 			Namespaces.Add(ns);
 			updateCommandsOnServer();
@@ -43,6 +49,20 @@ namespace VoiceCommander {
 
 		public void RemoveNamespace(VoiceCommandNamespace ns) {
 			Namespaces.Remove(ns);
+			string fullMacroIdPrefix = ns.Id + "/";
+			foreach (string fullMacroId in new List<string>(macroValueTexts.Keys.Where(k => k.StartsWith(fullMacroIdPrefix)))) {
+				macroValueTexts.Remove(fullMacroId);
+			}
+			updateCommandsOnServer();
+		}
+
+		public void SetMacroValueTexts(VoiceCommandNamespace ns, string macroId, string[] texts) {
+			string fullMacroId = ns.Id + "/" + macroId;
+			if (macroValueTexts.ContainsKey(fullMacroId)) {
+				macroValueTexts[fullMacroId] = texts;
+			} else {
+				macroValueTexts.Add(fullMacroId, texts);
+			}
 			updateCommandsOnServer();
 		}
 	}

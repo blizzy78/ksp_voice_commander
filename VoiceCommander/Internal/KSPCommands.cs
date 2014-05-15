@@ -27,37 +27,91 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace VoiceCommander {
 	internal class KSPCommands {
-		internal VoiceCommandNamespace Namespace {
-			get;
-			private set;
-		}
+		private VoiceCommandNamespace ns;
+		private Vessel[] vessels;
 
 		internal KSPCommands() {
-			Namespace = new VoiceCommandNamespace("ksp", "KSP");
-			Namespace += new VoiceCommand("quicksave", "Quick Save", quickSave);
-			Namespace += new VoiceCommand("quickload", "Quick Load", quickLoad);
-			Namespace += new VoiceCommand("toggleMap", "Toggle Map View", toggleMap);
-			Namespace += new VoiceCommand("cameraAutoMode", "Set Camera to Auto Mode", (e) => setCameraMode(FlightCamera.Modes.AUTO));
-			Namespace += new VoiceCommand("cameraFreeMode", "Set Camera to Free Mode", (e) => setCameraMode(FlightCamera.Modes.FREE));
-			Namespace += new VoiceCommand("cameraChaseMode", "Set Camera to Chase Mode", (e) => setCameraMode(FlightCamera.Modes.CHASE));
-			Namespace += new VoiceCommand("stage", "Activate Next Stage", activateStage);
-			Namespace += new VoiceCommand("throttleFull", "Set Throttle to Full", (e) => setThrottle(1f));
-			Namespace += new VoiceCommand("throttleZero", "Set Throttle to Zero", (e) => setThrottle(0f));
-			Namespace += new VoiceCommand("throttlePercent", "Set Throttle", throttlePercent);
-			Namespace += new VoiceCommand("actionGroup", "Activate Action Group", toggleActionGroup);
-			Namespace += new VoiceCommand("actionGroupGear", "Toggle Gear", (e) => toggleActionGroup(KSPActionGroup.Gear));
-			Namespace += new VoiceCommand("actionGroupBrakes", "Toggle Brakes", (e) => toggleActionGroup(KSPActionGroup.Brakes));
-			Namespace += new VoiceCommand("actionGroupLight", "Toggle Light", (e) => toggleActionGroup(KSPActionGroup.Light));
-			Namespace += new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", (e) => toggleActionGroup(KSPActionGroup.Abort));
-			Namespace += new VoiceCommand("actionGroupSAS", "Toggle SAS", (e) => toggleActionGroup(KSPActionGroup.SAS));
-			Namespace += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
-			Namespace += new VoiceCommand("toggleNavBall", "Toggle Nav Ball", toggleNavBall);
+			ns = new VoiceCommandNamespace("ksp", "KSP");
+			ns += new VoiceCommand("quicksave", "Quick Save", quickSave);
+			ns += new VoiceCommand("quickload", "Quick Load", quickLoad);
+			ns += new VoiceCommand("toggleMap", "Toggle Map View", toggleMap);
+			ns += new VoiceCommand("cameraAutoMode", "Set Camera to Auto Mode", (e) => setCameraMode(FlightCamera.Modes.AUTO));
+			ns += new VoiceCommand("cameraFreeMode", "Set Camera to Free Mode", (e) => setCameraMode(FlightCamera.Modes.FREE));
+			ns += new VoiceCommand("cameraChaseMode", "Set Camera to Chase Mode", (e) => setCameraMode(FlightCamera.Modes.CHASE));
+			ns += new VoiceCommand("stage", "Activate Next Stage", activateStage);
+			ns += new VoiceCommand("throttleFull", "Set Throttle to Full", (e) => setThrottle(1f));
+			ns += new VoiceCommand("throttleZero", "Set Throttle to Zero", (e) => setThrottle(0f));
+			ns += new VoiceCommand("throttlePercent", "Set Throttle", throttlePercent);
+			ns += new VoiceCommand("actionGroup", "Activate Action Group", toggleActionGroup);
+			ns += new VoiceCommand("actionGroupGear", "Toggle Gear", (e) => toggleActionGroup(KSPActionGroup.Gear));
+			ns += new VoiceCommand("actionGroupBrakes", "Toggle Brakes", (e) => toggleActionGroup(KSPActionGroup.Brakes));
+			ns += new VoiceCommand("actionGroupLight", "Toggle Light", (e) => toggleActionGroup(KSPActionGroup.Light));
+			ns += new VoiceCommand("actionGroupAbort", "Activate Action Group 'Abort'", (e) => toggleActionGroup(KSPActionGroup.Abort));
+			ns += new VoiceCommand("actionGroupSAS", "Toggle SAS", (e) => toggleActionGroup(KSPActionGroup.SAS));
+			ns += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
+			ns += new VoiceCommand("toggleNavBall", "Toggle Nav Ball", toggleNavBall);
+			ns += new VoiceCommand("switchToVessel", "Switch to Vessel", switchToVessel);
 			VoiceCommand pauseCommand = new VoiceCommand("pause", "Toggle Game Pause", pause);
 			pauseCommand.ExecuteAlways = true;
-			Namespace += pauseCommand;
+			ns += pauseCommand;
+		}
+
+		internal void register() {
+			VoiceCommander.Instance.AddNamespace(ns);
+
+			GameEvents.onVesselLoaded.Add(vesselLoaded);
+			GameEvents.onVesselChange.Add(vesselChange);
+			GameEvents.onVesselCreate.Add(vesselCreate);
+			GameEvents.onVesselDestroy.Add(vesselDestroy);
+			GameEvents.onVesselRename.Add(vesselRename);
+		}
+
+		internal void unregister() {
+			VoiceCommander.Instance.RemoveNamespace(ns);
+
+			GameEvents.onVesselLoaded.Remove(vesselLoaded);
+			GameEvents.onVesselChange.Remove(vesselChange);
+			GameEvents.onVesselCreate.Remove(vesselCreate);
+			GameEvents.onVesselDestroy.Remove(vesselDestroy);
+			GameEvents.onVesselRename.Remove(vesselRename);
+		}
+
+		private void vesselLoaded(Vessel vessel) {
+			updateVesselNameMacroValues();
+		}
+
+		private void vesselChange(Vessel vessel) {
+			updateVesselNameMacroValues();
+		}
+
+		private void vesselCreate(Vessel vessel) {
+			updateVesselNameMacroValues();
+		}
+
+		private void vesselDestroy(Vessel vessel) {
+			updateVesselNameMacroValues();
+		}
+
+		private void vesselRename(GameEvents.HostedFromToAction<Vessel, string> action) {
+			updateVesselNameMacroValues();
+		}
+
+		private void updateVesselNameMacroValues() {
+			List<Vessel> vessels = new List<Vessel>();
+			List<string> names = new List<string>();
+			foreach (Vessel vessel in FlightGlobals.Vessels
+				.Where(v => (v.vesselType != VesselType.Debris) && (v.vesselType != VesselType.SpaceObject) && (v.vesselType != VesselType.Unknown))) {
+
+				vessels.Add(vessel);
+				names.Add(vessel.vesselName);
+			}
+			this.vessels = vessels.ToArray();
+			VoiceCommander.Instance.Vessels = this.vessels;
+			VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", names.ToArray());
 		}
 
 		private void quickSave(VoiceCommandRecognizedEvent @event) {
@@ -172,6 +226,13 @@ namespace VoiceCommander {
 				} else {
 					FlightUIModeController.Instance.navBall.Expand();
 				}
+			}
+		}
+
+		private void switchToVessel(VoiceCommandRecognizedEvent @event) {
+			if (HighLogic.LoadedSceneIsFlight) {
+				int idx = int.Parse(@event.Parameters["vesselName"]);
+				FlightGlobals.SetActiveVessel(vessels[idx]);
 			}
 		}
 	}

@@ -75,6 +75,7 @@ namespace VoiceServer {
 		private string periapsisText;
 		private string maneuverNodeText;
 		private string soiText;
+		private Dictionary<string, List<string>> macroValueTexts = new Dictionary<string, List<string>>();
 		private int regularGroupNumber;
 		private int macroGroupNumber;
 
@@ -159,7 +160,9 @@ namespace VoiceServer {
 		}
 
 		private void speechRecognized(RecognitionResult result) {
+#if DEBUG
 			Console.WriteLine(string.Format("Command recognized: {0} (confidence: {1}%)", result.Text, (result.Confidence * 100f).ToString("F1")));
+#endif
 
 			StringBuilder buf = new StringBuilder();
 			if (commandGrammars.ContainsKey(result.Grammar)) {
@@ -170,7 +173,9 @@ namespace VoiceServer {
 				}
 				VoicePacket packet = new VoicePacket(PacketType.SPEECH_RECOGNIZED, buf.ToString());
 
+#if DEBUG
 				Console.WriteLine(string.Format("Sending command: {0}", packet.PacketDataString));
+#endif
 				byte[] data = packet.PacketData;
 				try {
 					client.Send(data, data.Length, clientEndPoint);
@@ -193,8 +198,11 @@ namespace VoiceServer {
 					case PacketType.CLEAR_COMMANDS:
 						lock (commands) {
 							commands.Clear();
+							macroValueTexts.Clear();
 						}
+#if DEBUG
 						Console.WriteLine("Commands cleared.");
+#endif
 						break;
 
 					case PacketType.ADD_COMMAND:
@@ -210,65 +218,113 @@ namespace VoiceServer {
 								commands.Add(fullCmdId, cmdTexts);
 							}
 							cmdTexts.Add(text);
+#if DEBUG
 							Console.WriteLine(string.Format("Command added: {0} ({1})", text, fullCmdId));
+#endif
+						}
+						break;
+
+					case PacketType.ADD_MACRO_COMMAND:
+						lock (commands) {
+							string[] parts = packet.Data.Split(new char[] { '|' }, 2, StringSplitOptions.RemoveEmptyEntries);
+							string fullMacroId = parts[0];
+							string text = parts[1];
+							List<string> valueTexts;
+							if (macroValueTexts.ContainsKey(fullMacroId)) {
+								valueTexts = macroValueTexts[fullMacroId];
+							} else {
+								valueTexts = new List<string>();
+								macroValueTexts.Add(fullMacroId, valueTexts);
+							}
+							valueTexts.Add(text);
+#if DEBUG
+							Console.WriteLine(string.Format("Macro value added: {0} ({1})", text, fullMacroId));
+#endif
 						}
 						break;
 
 					case PacketType.END_OF_COMMANDS:
 						reloadCommandsInEngine();
+						Console.WriteLine("Reloaded commands.");
 						break;
 
 					case PacketType.SET_YAW_COMMAND:
 						yawText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'yaw' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_PITCH_COMMAND:
 						pitchText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'pitch' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_ROLL_COMMAND:
 						rollText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'roll' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_PROGRADE_COMMAND:
 						progradeText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'prograde' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_RETROGRADE_COMMAND:
 						retrogradeText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'retrograde' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_NORMAL_COMMAND:
 						normalText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'normal' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_ANTI_NORMAL_COMMAND:
 						antiNormalText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'anti-normal' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_RADIAL_COMMAND:
 						radialText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'radial' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_ANTI_RADIAL_COMMAND:
 						antiRadialText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'anti-radial' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_APOAPSIS_COMMAND:
 						apoapsisText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'apoapsis' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_PERIAPSIS_COMMAND:
 						periapsisText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_MANEUVER_NODE_COMMAND:
 						maneuverNodeText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'maneuver node' command: {0}", packet.Data));
+#endif
 						break;
 					case PacketType.SET_SOI_COMMAND:
 						soiText = packet.Data;
+#if DEBUG
 						Console.WriteLine(string.Format("Set 'sphere of influence' command: {0}", packet.Data));
+#endif
 						break;
 				}
 			} catch (Exception) {
@@ -291,9 +347,13 @@ namespace VoiceServer {
 						if (commandGrammarBuilder != null) {
 							Grammar commandGrammar = new Grammar(commandGrammarBuilder);
 							commandGrammars.Add(commandGrammar, cmdEntry.Key);
+#if DEBUG
 							Console.WriteLine(string.Format("Added engine command: {0}", text));
+#endif
 						} else {
+#if DEBUG
 							Console.WriteLine(string.Format("Couldn't parse command, ignoring: {0}", text));
+#endif
 						}
 					}
 				}
@@ -411,6 +471,30 @@ namespace VoiceServer {
 							new SemanticResultValue(soiText, "SoI"));
 					}
 					break;
+
+				default:
+					List<string> texts = getMacroValueTexts(macro);
+					if ((texts != null) && (texts.Count() > 0)) {
+						Choices choices = new Choices();
+						for (int i = 0; i < texts.Count(); i++) {
+							choices.Add(new SemanticResultValue(texts[i], i.ToString()));
+						}
+						return choices;
+					}
+					break;
+			}
+			return null;
+		}
+
+		private List<string> getMacroValueTexts(string macroId) {
+			if (macroValueTexts.ContainsKey(macroId)) {
+				return macroValueTexts[macroId];
+			} else {
+				string macroIdSuffix = "/" + macroId;
+				macroId = macroValueTexts.Keys.FirstOrDefault(k => k.EndsWith(macroIdSuffix));
+				if (macroId != null) {
+					return macroValueTexts[macroId];
+				}
 			}
 			return null;
 		}
