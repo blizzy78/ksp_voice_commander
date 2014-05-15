@@ -82,6 +82,14 @@ namespace VoiceCommander {
 			get;
 			private set;
 		}
+		internal string ManeuverNodeText {
+			get;
+			private set;
+		}
+		internal string SoIText {
+			get;
+			private set;
+		}
 
 		private Action onOk;
 		private Action onCancel;
@@ -92,7 +100,7 @@ namespace VoiceCommander {
 		internal SettingsWindow(Dictionary<VoiceCommand, string> texts,
 			string yawText, string pitchText, string rollText,
 			string progradeText, string retrogradeText, string normalText, string antiNormalText, string radialText, string antiRadialText,
-			string apoapsisText, string periapsisText,
+			string apoapsisText, string periapsisText, string maneuverNodeText, string soiText,
 			Action onOk, Action onCancel) {
 
 			this.Texts = texts;
@@ -108,6 +116,8 @@ namespace VoiceCommander {
 			this.AntiRadialText = antiRadialText;
 			this.ApoapsisText = apoapsisText;
 			this.PeriapsisText = periapsisText;
+			this.ManeuverNodeText = maneuverNodeText;
+			this.SoIText = soiText;
 
 			this.onOk = onOk;
 			this.onCancel = onCancel;
@@ -203,6 +213,16 @@ namespace VoiceCommander {
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Periapsis:", GUILayout.Width(100));
 			PeriapsisText = GUILayout.TextField(PeriapsisText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Maneuver node:", GUILayout.Width(100));
+			ManeuverNodeText = GUILayout.TextField(ManeuverNodeText ?? string.Empty);
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Sphere of influence:", GUILayout.Width(100));
+			SoIText = GUILayout.TextField(SoIText ?? string.Empty);
 			GUILayout.EndHorizontal();
 		}
 

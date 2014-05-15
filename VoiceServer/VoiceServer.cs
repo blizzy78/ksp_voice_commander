@@ -73,6 +73,8 @@ namespace VoiceServer {
 		private string antiRadialText;
 		private string apoapsisText;
 		private string periapsisText;
+		private string maneuverNodeText;
+		private string soiText;
 		private int regularGroupNumber;
 		private int macroGroupNumber;
 
@@ -92,6 +94,13 @@ namespace VoiceServer {
 		private bool HaveApPeTexts {
 			get {
 				return !string.IsNullOrEmpty(apoapsisText) && !string.IsNullOrEmpty(periapsisText);
+			}
+		}
+
+		private bool HaveWarpTargetTexts {
+			get {
+				return !string.IsNullOrEmpty(apoapsisText) && !string.IsNullOrEmpty(periapsisText) &&
+					!string.IsNullOrEmpty(maneuverNodeText) && !string.IsNullOrEmpty(soiText);
 			}
 		}
 
@@ -243,6 +252,14 @@ namespace VoiceServer {
 						periapsisText = packet.Data;
 						Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
 						break;
+					case PacketType.SET_MANEUVER_NODE_COMMAND:
+						maneuverNodeText = packet.Data;
+						Console.WriteLine(string.Format("Set 'maneuver node' command: {0}", packet.Data));
+						break;
+					case PacketType.SET_SOI_COMMAND:
+						soiText = packet.Data;
+						Console.WriteLine(string.Format("Set 'sphere of influence' command: {0}", packet.Data));
+						break;
 				}
 			} catch (Exception) {
 				// ignore
@@ -369,6 +386,16 @@ namespace VoiceServer {
 						return new Choices(
 							new SemanticResultValue(apoapsisText, "ap"),
 							new SemanticResultValue(periapsisText, "pe"));
+					}
+					break;
+
+				case "warpTarget":
+					if (HaveWarpTargetTexts) {
+						return new Choices(
+							new SemanticResultValue(apoapsisText, "ap"),
+							new SemanticResultValue(periapsisText, "pe"),
+							new SemanticResultValue(maneuverNodeText, "maneuverNode"),
+							new SemanticResultValue(soiText, "SoI"));
 					}
 					break;
 			}

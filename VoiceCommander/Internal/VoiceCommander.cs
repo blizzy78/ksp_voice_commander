@@ -74,6 +74,8 @@ namespace VoiceCommander {
 		private string antiRadialText;
 		private string apoapsisText;
 		private string periapsisText;
+		private string maneuverNodeText;
+		private string soiText;
 		private InternalCommands internalCommands = new InternalCommands();
 		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
@@ -281,6 +283,12 @@ namespace VoiceCommander {
 			if (!string.IsNullOrEmpty(periapsisText)) {
 				sendPacketToServer(new VoicePacket(PacketType.SET_PERIAPSIS_COMMAND, periapsisText));
 			}
+			if (!string.IsNullOrEmpty(maneuverNodeText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_MANEUVER_NODE_COMMAND, maneuverNodeText));
+			}
+			if (!string.IsNullOrEmpty(soiText)) {
+				sendPacketToServer(new VoicePacket(PacketType.SET_SOI_COMMAND, soiText));
+			}
 
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
 				foreach (string text in cmdEntry.Value) {
@@ -323,7 +331,7 @@ namespace VoiceCommander {
 				settingsWindow = new SettingsWindow(dlgTexts,
 					yawText, pitchText, rollText,
 					progradeText, retrogradeText, normalText, antiNormalText, radialText, antiRadialText,
-					apoapsisText, periapsisText,
+					apoapsisText, periapsisText, maneuverNodeText, soiText,
 					() => {
 						yawText = settingsWindow.YawText;
 						pitchText = settingsWindow.PitchText;
@@ -336,6 +344,8 @@ namespace VoiceCommander {
 						antiRadialText = settingsWindow.AntiRadialText;
 						apoapsisText = settingsWindow.ApoapsisText;
 						periapsisText = settingsWindow.PeriapsisText;
+						maneuverNodeText = settingsWindow.ManeuverNodeText;
+						soiText = settingsWindow.SoIText;
 
 						dlgTexts = settingsWindow.Texts;
 						foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
@@ -371,6 +381,8 @@ namespace VoiceCommander {
 			antiRadialText = textsNode.get("antiRadial", (string) null);
 			apoapsisText = textsNode.get("apoapsis", (string) null);
 			periapsisText = textsNode.get("periapsis", (string) null);
+			maneuverNodeText = textsNode.get("maneuverNode", (string) null);
+			soiText = textsNode.get("SoI", (string) null);
 
 			texts = new Dictionary<string, List<string>>();
 			foreach (ConfigNode nsNode in textsNode.nodes) {
@@ -428,6 +440,12 @@ namespace VoiceCommander {
 			}
 			if (!string.IsNullOrEmpty(periapsisText)) {
 				textsNode.overwrite("periapsis", periapsisText);
+			}
+			if (!string.IsNullOrEmpty(maneuverNodeText)) {
+				textsNode.overwrite("maneuverNode", maneuverNodeText);
+			}
+			if (!string.IsNullOrEmpty(soiText)) {
+				textsNode.overwrite("SoI", soiText);
 			}
 
 			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {

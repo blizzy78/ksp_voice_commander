@@ -34,7 +34,12 @@ using MuMech;
 namespace VoiceCommanderMechJeb {
 	[KSPAddon(KSPAddon.Startup.Flight, false)]
 	internal class VoiceCommanderMechJeb : MonoBehaviour {
+		private const double WARP_LEAD_TIME = 30;
+
 		private VoiceCommandNamespace ns;
+		private bool warping;
+		private double warpTargetUT;
+		private double warpTargetLeadTime;
 
 		private void Start() {
 			Debug.Log("[VoiceCommanderMechJeb] registering commands");
@@ -45,7 +50,10 @@ namespace VoiceCommanderMechJeb {
 			ns += new VoiceCommand("turnAxis", "Turn About an Axis", turnAxis);
 			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", createManeuverNodeCircularize);
 			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
+			ns += new VoiceCommand("stopExecutingManeuverNode", "Stop Executing Maneuver Node", stopExecutingManeuverNode);
 			ns += new VoiceCommand("removeAllManeuverNodes", "Remove All Maneuver Nodes", removeAllManeuverNodes);
+			ns += new VoiceCommand("warpTo", "Time Warp to An Event", warpTo);
+			ns += new VoiceCommand("killWarp", "Kill Time Warping", killWarp);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -124,7 +132,7 @@ namespace VoiceCommanderMechJeb {
 				Transform transform = mechJeb.vessel.GetTransform();
 				Vector3 worldRotationAxis = transform.TransformDirection(rotationAxis);
 				Quaternion delta = Quaternion.AngleAxis(degrees, worldRotationAxis);
-				Quaternion currentRotation = Quaternion.LookRotation(transform.up, -transform.forward); //transform.rotation;
+				Quaternion currentRotation = Quaternion.LookRotation(transform.up, -transform.forward);
 				Quaternion targetRotation = delta * currentRotation;
 				mechJeb.attitude.attitudeTo(targetRotation, AttitudeReference.INERTIAL, this);
 			}
@@ -154,8 +162,14 @@ namespace VoiceCommanderMechJeb {
 		private void executeManeuverNode(VoiceCommandRecognizedEvent @event) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
-				MechJebModuleNodeExecutor executor = mechJeb.GetComputerModule<MechJebModuleNodeExecutor>();
-				executor.ExecuteOneNode(this);
+				mechJeb.node.ExecuteOneNode(this);
+			}
+		}
+
+		private void stopExecutingManeuverNode(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				mechJeb.node.Abort();
 			}
 		}
 
@@ -166,9 +180,68 @@ namespace VoiceCommanderMechJeb {
 			}
 		}
 
+		private void warpTo(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				double targetUT = 0;
+				switch (@event.Parameters["warpTarget"]) {
+					case "maneuverNode":
+						if (mechJeb.vessel.patchedConicSolver.maneuverNodes.Any()) {
+							targetUT = mechJeb.vessel.patchedConicSolver.maneuverNodes[0].UT;
+						}
+						break;
+
+					case "ap":
+						if (mechJeb.vessel.orbit.eccentricity < 1) {
+							targetUT = mechJeb.vessel.orbit.NextApoapsisTime(mechJeb.vesselState.time);
+						}
+						break;
+					
+					case "pe":
+						targetUT = mechJeb.vessel.orbit.NextPeriapsisTime(mechJeb.vesselState.time);
+						break;
+
+					case "SoI":
+						if (mechJeb.vessel.orbit.patchEndTransition != Orbit.PatchTransitionType.FINAL) {
+							targetUT = mechJeb.vessel.orbit.EndUT;
+						}
+						break;
+				}
+
+				if (targetUT != 0) {
+					warpTargetUT = targetUT;
+					warpTargetLeadTime = WARP_LEAD_TIME;
+					warping = true;
+				}
+			}
+		}
+
+		private void killWarp(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if ((mechJeb != null) && warping) {
+				warping = false;
+				mechJeb.warp.MinimumWarp(true);
+			}
+		}
+
 		private MechJebCore getMechJeb() {
 			// no need to check HighLogic.LoadedSceneIsFlight here
 			return FlightGlobals.ActiveVessel.GetMasterMechJeb();
+		}
+
+		private void FixedUpdate() {
+			if (warping) {
+				MechJebCore mechJeb = getMechJeb();
+				if (mechJeb != null) {
+					double targetUT = warpTargetUT - warpTargetLeadTime;
+					if (mechJeb.vesselState.time < targetUT) {
+						mechJeb.warp.WarpToUT(targetUT);
+					} else {
+						warping = false;
+						mechJeb.warp.MinimumWarp(true);
+					}
+				}
+			}
 		}
 	}
 }
