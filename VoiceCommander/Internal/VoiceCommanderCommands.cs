@@ -27,24 +27,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace VoiceCommander {
-	internal class InternalCommands {
+	[KSPAddon(KSPAddon.Startup.MainMenu, true)]
+	internal class VoiceCommanderCommands : MonoBehaviour {
 		private VoiceCommandNamespace ns;
 
-		internal InternalCommands() {
+		private void Awake() {
+			GameObject.DontDestroyOnLoad(this);
+		}
+
+		private void Start() {
+			Debug.Log("[VoiceCommander] registering Voice Commander commands");
+
 			ns = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
 			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", (e) => VoiceCommander.Instance.toggleListen());
 			toggleListenCmd.ExecuteAlways = true;
 			ns += toggleListenCmd;
-		}
 
-		internal void register() {
 			VoiceCommander.Instance.AddNamespace(ns);
 		}
 
-		internal void unregister() {
+		private void OnDestroy() {
+			Debug.Log("[VoiceCommander] unregistering Voice Commander commands");
 			VoiceCommander.Instance.RemoveNamespace(ns);
+			ns = null;
 		}
 	}
 }

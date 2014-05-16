@@ -55,7 +55,7 @@
     <Compile Include="Internal\InfoDrawable.cs" />
     <Compile Include="Internal\InstallChecker.cs" />
     <Compile Include="Internal\VoiceCommanderCommands.cs" />
-    <Compile Include="Internal\KSPCommands.cs" />
+    <Compile Include="Internal\KSPFlightCommands.cs" />
     <Compile Include="Internal\SettingsWindow.cs" />
     <Compile Include="Internal\UpdateChecker.cs" />
     <Compile Include="Internal\VoiceCommand.cs" />

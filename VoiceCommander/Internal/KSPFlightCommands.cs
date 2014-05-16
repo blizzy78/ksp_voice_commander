@@ -30,11 +30,14 @@ using System.Text;
 using UnityEngine;
 
 namespace VoiceCommander {
-	internal class KSPCommands {
+	[KSPAddon(KSPAddon.Startup.Flight, false)]
+	internal class KSPFlightCommands : MonoBehaviour {
 		private VoiceCommandNamespace ns;
-		private Vessel[] vessels;
+		private Vessel[] vessels = new Vessel[0];
 
-		internal KSPCommands() {
+		private void Start() {
+			Debug.Log("[VoiceCommander] registering KSP flight commands");
+
 			ns = new VoiceCommandNamespace("ksp", "KSP");
 			ns += new VoiceCommand("quicksave", "Quick Save", quickSave);
 			ns += new VoiceCommand("quickload", "Quick Load", quickLoad);
@@ -55,12 +58,11 @@ namespace VoiceCommander {
 			ns += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
 			ns += new VoiceCommand("toggleNavBall", "Toggle Nav Ball", toggleNavBall);
 			ns += new VoiceCommand("switchToVessel", "Switch to Vessel", switchToVessel);
+
 			VoiceCommand pauseCommand = new VoiceCommand("pause", "Toggle Game Pause", pause);
 			pauseCommand.ExecuteAlways = true;
 			ns += pauseCommand;
-		}
 
-		internal void register() {
 			VoiceCommander.Instance.AddNamespace(ns);
 
 			GameEvents.onVesselLoaded.Add(vesselLoaded);
@@ -70,50 +72,63 @@ namespace VoiceCommander {
 			GameEvents.onVesselRename.Add(vesselRename);
 		}
 
-		internal void unregister() {
-			VoiceCommander.Instance.RemoveNamespace(ns);
+		private void OnDestroy() {
+			Debug.Log("[VoiceCommander] unregistering KSP flight commands");
 
 			GameEvents.onVesselLoaded.Remove(vesselLoaded);
 			GameEvents.onVesselChange.Remove(vesselChange);
 			GameEvents.onVesselCreate.Remove(vesselCreate);
 			GameEvents.onVesselDestroy.Remove(vesselDestroy);
 			GameEvents.onVesselRename.Remove(vesselRename);
+
+			VoiceCommander.Instance.RemoveNamespace(ns);
 		}
 
 		private void vesselLoaded(Vessel vessel) {
-			updateVesselNameMacroValues();
+			updateVesselNameMacroValues("vesselLoaded");
 		}
 
 		private void vesselChange(Vessel vessel) {
-			updateVesselNameMacroValues();
+			updateVesselNameMacroValues("vesselChange");
 		}
 
 		private void vesselCreate(Vessel vessel) {
-			updateVesselNameMacroValues();
+			updateVesselNameMacroValues("vesselCreate");
 		}
 
 		private void vesselDestroy(Vessel vessel) {
-			updateVesselNameMacroValues();
+			updateVesselNameMacroValues("vesselDestroy");
 		}
 
 		private void vesselRename(GameEvents.HostedFromToAction<Vessel, string> action) {
-			updateVesselNameMacroValues();
+			updateVesselNameMacroValues("vesselRename");
 		}
 
-		private void updateVesselNameMacroValues() {
+		private void updateVesselNameMacroValues(string why) {
 			if (HighLogic.LoadedSceneIsFlight) {
-				List<Vessel> vessels = new List<Vessel>();
-				List<string> names = new List<string>();
-				foreach (Vessel vessel in FlightGlobals.Vessels
-					.Where(v => (v.vesselType != VesselType.Debris) && (v.vesselType != VesselType.SpaceObject) && (v.vesselType != VesselType.Unknown))) {
+				List<string> oldNames = new List<string>(this.vessels.Select(v => v.vesselName));
 
-					vessels.Add(vessel);
-					names.Add(vessel.vesselName);
+				List<Vessel> newVessels = new List<Vessel>();
+				foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => canSwitchTo(v))) {
+					newVessels.Add(vessel);
 				}
-				this.vessels = vessels.ToArray();
-				VoiceCommander.Instance.Vessels = this.vessels;
-				VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", names.ToArray());
+
+				newVessels.Sort((v1, v2) => oldNames.IndexOf(v1.vesselName) - oldNames.IndexOf(v2.vesselName));
+
+				List<string> newNames = new List<string>(newVessels.Select(v => v.vesselName));
+
+				if (!newNames.SequenceEqual(oldNames)) {
+					this.vessels = newVessels.ToArray();
+					VoiceCommander.Instance.Vessels = this.vessels;
+					Debug.Log(string.Format("[VoiceCommander] updating texts for <vesselName>: {0}", why));
+					VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", newNames.ToArray());
+				}
 			}
+		}
+
+		private bool canSwitchTo(Vessel vessel) {
+			VesselType type = vessel.vesselType;
+			return (type != VesselType.Debris) && (type != VesselType.Flag) && (type != VesselType.SpaceObject) && (type != VesselType.Unknown);
 		}
 
 		private void quickSave(VoiceCommandRecognizedEvent @event) {

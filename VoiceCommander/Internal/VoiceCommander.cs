@@ -35,7 +35,7 @@ using UnityEngine;
 using Toolbar;
 
 namespace VoiceCommander {
-	[KSPAddonFixed(KSPAddon.Startup.MainMenu, true, typeof(VoiceCommander))]
+	[KSPAddonFixed(KSPAddon.Startup.Instantly, true, typeof(VoiceCommander))]
 	public partial class VoiceCommander : MonoBehaviour {
 		internal const int VERSION = 3;
 
@@ -77,17 +77,16 @@ namespace VoiceCommander {
 		private string maneuverNodeText;
 		private string soiText;
 		private Dictionary<string, string[]> macroValueTexts = new Dictionary<string, string[]>();
-		private InternalCommands internalCommands = new InternalCommands();
-		private KSPCommands kspCommands = new KSPCommands();
 		private UpdateChecker updateChecker;
 
 		internal VoiceCommander() {
 			Instance = this;
+
+			Vessels = new Vessel[0];
+			Namespaces = new List<VoiceCommandNamespace>();
 		}
 
-		private void Start() {
-			Namespaces = new List<VoiceCommandNamespace>();
-
+		private void Awake() {
 			GameObject.DontDestroyOnLoad(this);
 
 			loadSettings();
@@ -98,7 +97,9 @@ namespace VoiceCommander {
 			startReceive();
 
 			Debug.Log("[VoiceCommander] now listening for commands from voice server");
+		}
 
+		private void Start() {
 			button = ToolbarManager.Instance.add("VoiceCommander", "VoiceCommander");
 			button.ToolTip = "Toggle Voice Commander (Right-Click for Settings)";
 			button.TexturePath = "blizzy/VoiceCommander/listening";
@@ -111,6 +112,7 @@ namespace VoiceCommander {
 				}
 			};
 
+			// close settings window on scene change
 			GameEvents.onGameSceneLoadRequested.Add(sceneChanged);
 
 			updateChecker = new UpdateChecker();
@@ -118,9 +120,6 @@ namespace VoiceCommander {
 				UpdateAvailable = updateChecker.UpdateAvailable;
 				updateChecker = null;
 			};
-
-			internalCommands.register();
-			kspCommands.register();
 		}
 
 		private void startReceive() {
@@ -129,9 +128,6 @@ namespace VoiceCommander {
 
 		private void OnDestroy() {
 			saveSettings();
-
-			internalCommands.unregister();
-			kspCommands.unregister();
 
 			client.Close();
 			button.Destroy();
