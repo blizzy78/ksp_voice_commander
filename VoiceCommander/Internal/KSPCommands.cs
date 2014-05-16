@@ -101,17 +101,19 @@ namespace VoiceCommander {
 		}
 
 		private void updateVesselNameMacroValues() {
-			List<Vessel> vessels = new List<Vessel>();
-			List<string> names = new List<string>();
-			foreach (Vessel vessel in FlightGlobals.Vessels
-				.Where(v => (v.vesselType != VesselType.Debris) && (v.vesselType != VesselType.SpaceObject) && (v.vesselType != VesselType.Unknown))) {
+			if (HighLogic.LoadedSceneIsFlight) {
+				List<Vessel> vessels = new List<Vessel>();
+				List<string> names = new List<string>();
+				foreach (Vessel vessel in FlightGlobals.Vessels
+					.Where(v => (v.vesselType != VesselType.Debris) && (v.vesselType != VesselType.SpaceObject) && (v.vesselType != VesselType.Unknown))) {
 
-				vessels.Add(vessel);
-				names.Add(vessel.vesselName);
+					vessels.Add(vessel);
+					names.Add(vessel.vesselName);
+				}
+				this.vessels = vessels.ToArray();
+				VoiceCommander.Instance.Vessels = this.vessels;
+				VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", names.ToArray());
 			}
-			this.vessels = vessels.ToArray();
-			VoiceCommander.Instance.Vessels = this.vessels;
-			VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", names.ToArray());
 		}
 
 		private void quickSave(VoiceCommandRecognizedEvent @event) {
