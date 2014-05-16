@@ -1,4 +1,12 @@
-﻿1.1.1, 2014-05-13
+﻿1.2.0, 2014-05-17
+- Added new commands. See http://bit.ly/1lnCdEv for a complete list.
+- Added optional push-to-talk: Press a key on your keyboard, mouse, or joystick to enable
+  listening only temporarily.
+- The last command recognized will now be displayed in the game for a few seconds (along with
+  an indication of recognition confidence.)
+- Fixed a bug where multiple alternate texts for a command were not accepted correctly.
+
+1.1.1, 2014-05-13
 - Fixed a bug where the texts for "Apoapsis" and "Periapsis" were not saved correctly.
 - Recompiled VoiceCommanderMechJeb.dll using a newer version of MechJeb. This will prevent
   KSP from crashing should an updated version of MechJeb be installed.
