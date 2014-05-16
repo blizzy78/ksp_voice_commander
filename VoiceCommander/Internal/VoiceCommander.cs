@@ -44,6 +44,7 @@ namespace VoiceCommander {
 		private const int CLIENT_PORT = 48285;
 		private const int SERVER_PORT = 48286;
 		private const float MIN_CONFIDENCE = 0.6f;
+		private const long PUSH_TO_TALK_GRACE_PERIOD = 1500;
 
 		internal List<VoiceCommandNamespace> Namespaces {
 			get;
@@ -61,6 +62,8 @@ namespace VoiceCommander {
 		private List<VoicePacket> packets = new List<VoicePacket>();
 		private IButton button;
 		private bool listening = true;
+		private bool pushToTalkListening;
+		private long pushToTalkListeningStopped;
 		private SettingsWindow settingsWindow;
 		private Dictionary<string, List<string>> texts;
 		private string yawText;
@@ -76,8 +79,27 @@ namespace VoiceCommander {
 		private string periapsisText;
 		private string maneuverNodeText;
 		private string soiText;
+		private bool pushToTalk;
+		private KeyCode pushToTalkKey = KeyCode.None;
 		private Dictionary<string, string[]> macroValueTexts = new Dictionary<string, string[]>();
 		private UpdateChecker updateChecker;
+
+		private bool ReactToCommands {
+			get {
+				return pushToTalk ? pushToTalkListening : listening;
+			}
+		}
+
+		private bool IsInPushToTalkGracePeriod {
+			get {
+				if (pushToTalkListening) {
+					return true;
+				} else {
+					long now = DateTime.UtcNow.Ticks / 10000;
+					return (now - pushToTalkListeningStopped) < PUSH_TO_TALK_GRACE_PERIOD;
+				}
+			}
+		}
 
 		internal VoiceCommander() {
 			Instance = this;
@@ -102,7 +124,6 @@ namespace VoiceCommander {
 		private void Start() {
 			button = ToolbarManager.Instance.add("VoiceCommander", "VoiceCommander");
 			button.ToolTip = "Toggle Voice Commander (Right-Click for Settings)";
-			button.TexturePath = "blizzy/VoiceCommander/listening";
 			button.Visibility = new GameScenesVisibility(GameScenes.EDITOR, GameScenes.FLIGHT, GameScenes.SPACECENTER, GameScenes.SPH, GameScenes.TRACKSTATION);
 			button.OnClick += (e) => {
 				if (e.MouseButton == 1) {
@@ -111,6 +132,7 @@ namespace VoiceCommander {
 					toggleListen();
 				}
 			};
+			updateButtonIcon();
 
 			// close settings window on scene change
 			GameEvents.onGameSceneLoadRequested.Add(sceneChanged);
@@ -120,6 +142,10 @@ namespace VoiceCommander {
 				UpdateAvailable = updateChecker.UpdateAvailable;
 				updateChecker = null;
 			};
+		}
+
+		private void updateButtonIcon() {
+			button.TexturePath = ReactToCommands ? "blizzy/VoiceCommander/listening" : "blizzy/VoiceCommander/idle";
 		}
 
 		private void startReceive() {
@@ -140,6 +166,12 @@ namespace VoiceCommander {
 			if (updateChecker != null) {
 				updateChecker.update();
 			}
+
+			if (settingsWindow != null) {
+				settingsWindow.update();
+			}
+
+			handlePushToTalk();
 		}
 
 		private void OnGUI() {
@@ -188,7 +220,8 @@ namespace VoiceCommander {
 				string command = parameters["command"];
 				VoiceCommand cmd = findCommand(command);
 				if (cmd != null) {
-					if ((listening && !isGamePaused()) || cmd.ExecuteAlways) {
+					bool react = ReactToCommands || (pushToTalk && IsInPushToTalkGracePeriod);
+					if ((react && !isGamePaused()) || cmd.ExecuteAlways) {
 						button.Drawable = new InfoDrawable(button, string.Format("{0} ({1:F1}%)", cmd.Label, confidence * 100f));
 						try {
 							cmd.Callback(new VoiceCommandRecognizedEvent(parameters));
@@ -310,7 +343,7 @@ namespace VoiceCommander {
 
 		internal void toggleListen() {
 			listening = !listening;
-			button.TexturePath = listening ? "blizzy/VoiceCommander/listening" : "blizzy/VoiceCommander/idle";
+			updateButtonIcon();
 		}
 
 		private void sceneChanged(GameScenes scene) {
@@ -332,10 +365,12 @@ namespace VoiceCommander {
 						dlgTexts.Add(cmd, dlgText);
 					}
 				}
+				bool oldPushToTalk = pushToTalk;
 				settingsWindow = new SettingsWindow(dlgTexts,
 					yawText, pitchText, rollText,
 					progradeText, retrogradeText, normalText, antiNormalText, radialText, antiRadialText,
 					apoapsisText, periapsisText, maneuverNodeText, soiText,
+					pushToTalk, pushToTalkKey,
 					() => {
 						yawText = settingsWindow.YawText;
 						pitchText = settingsWindow.PitchText;
@@ -351,6 +386,9 @@ namespace VoiceCommander {
 						maneuverNodeText = settingsWindow.ManeuverNodeText;
 						soiText = settingsWindow.SoIText;
 
+						pushToTalk = settingsWindow.PushToTalk;
+						pushToTalkKey = settingsWindow.PushToTalkKey;
+
 						dlgTexts = settingsWindow.Texts;
 						foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
 							VoiceCommand cmd = entry.Key;
@@ -362,6 +400,14 @@ namespace VoiceCommander {
 
 						settingsWindow = null;
 
+						// if push-to-talk has been switched off, activate regular listening mode to avoid confusion
+						// (why is it still not listening??)
+						if (!pushToTalk && oldPushToTalk) {
+							listening = true;
+						}
+
+						updateButtonIcon();
+
 						saveSettings();
 						updateCommandsOnServer();
 					}, () => {
@@ -372,6 +418,10 @@ namespace VoiceCommander {
 
 		private void loadSettings() {
 			ConfigNode rootNode = ConfigNode.Load(SETTINGS_FILE) ?? new ConfigNode();
+
+			pushToTalk = rootNode.get("pushToTalk", false);
+			string pushToTalkKeyStr = rootNode.get("pushToTalkKey", KeyCode.None.ToString());
+			pushToTalkKey = (KeyCode) Enum.Parse(typeof(KeyCode), pushToTalkKeyStr);
 
 			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
 			yawText = textsNode.get("yaw", (string) null);
@@ -410,8 +460,11 @@ namespace VoiceCommander {
 
 		private void saveSettings() {
 			ConfigNode rootNode = new ConfigNode();
-			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
 
+			rootNode.overwrite("pushToTalk", pushToTalk);
+			rootNode.overwrite("pushToTalkKey", pushToTalkKey.ToString());
+
+			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
 			if (!string.IsNullOrEmpty(yawText)) {
 				textsNode.overwrite("yaw", yawText);
 			}
@@ -465,6 +518,26 @@ namespace VoiceCommander {
 			}
 
 			rootNode.Save(SETTINGS_FILE);
+		}
+
+		private void handlePushToTalk() {
+			bool newPushToTalkListening;
+			if (Input.anyKey && (GUIUtility.keyboardControl == 0) && pushToTalk && (pushToTalkKey != KeyCode.None)) {
+				newPushToTalkListening = Utils.getCurrentInputKey() == pushToTalkKey;
+			} else {
+				newPushToTalkListening = false;
+			}
+			if (newPushToTalkListening != pushToTalkListening) {
+				setPushToTalkListening(newPushToTalkListening);
+			}
+		}
+
+		private void setPushToTalkListening(bool pushToTalkListening) {
+			this.pushToTalkListening = pushToTalkListening;
+			if (!pushToTalkListening) {
+				pushToTalkListeningStopped = DateTime.UtcNow.Ticks / 10000;
+			}
+			updateButtonIcon();
 		}
 	}
 }
