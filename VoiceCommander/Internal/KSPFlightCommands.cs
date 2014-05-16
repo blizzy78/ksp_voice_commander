@@ -65,6 +65,8 @@ namespace VoiceCommander {
 
 			VoiceCommander.Instance.AddNamespace(ns);
 
+			updateVesselNameMacroValues();
+
 			GameEvents.onVesselLoaded.Add(vesselLoaded);
 			GameEvents.onVesselChange.Add(vesselChange);
 			GameEvents.onVesselCreate.Add(vesselCreate);
@@ -85,26 +87,26 @@ namespace VoiceCommander {
 		}
 
 		private void vesselLoaded(Vessel vessel) {
-			updateVesselNameMacroValues("vesselLoaded");
+			updateVesselNameMacroValues();
 		}
 
 		private void vesselChange(Vessel vessel) {
-			updateVesselNameMacroValues("vesselChange");
+			updateVesselNameMacroValues();
 		}
 
 		private void vesselCreate(Vessel vessel) {
-			updateVesselNameMacroValues("vesselCreate");
+			updateVesselNameMacroValues();
 		}
 
 		private void vesselDestroy(Vessel vessel) {
-			updateVesselNameMacroValues("vesselDestroy");
+			updateVesselNameMacroValues();
 		}
 
 		private void vesselRename(GameEvents.HostedFromToAction<Vessel, string> action) {
-			updateVesselNameMacroValues("vesselRename");
+			updateVesselNameMacroValues();
 		}
 
-		private void updateVesselNameMacroValues(string why) {
+		private void updateVesselNameMacroValues() {
 			if (HighLogic.LoadedSceneIsFlight) {
 				List<string> oldNames = new List<string>(this.vessels.Select(v => v.vesselName));
 
@@ -120,7 +122,6 @@ namespace VoiceCommander {
 				if (!newNames.SequenceEqual(oldNames)) {
 					this.vessels = newVessels.ToArray();
 					VoiceCommander.Instance.Vessels = this.vessels;
-					Debug.Log(string.Format("[VoiceCommander] updating texts for <vesselName>: {0}", why));
 					VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", newNames.ToArray());
 				}
 			}
