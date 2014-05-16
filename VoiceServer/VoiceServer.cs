@@ -358,6 +358,10 @@ namespace VoiceServer {
 
 			commandGrammars.Clear();
 
+#if DEBUG
+			StopWatch stopWatch = new StopWatch().start();
+#endif
+
 			foreach (KeyValuePair<string, List<string>> cmdEntry in commands) {
 				foreach (string text in cmdEntry.Value) {
 					GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(text);
@@ -376,16 +380,28 @@ namespace VoiceServer {
 			}
 
 			// generic test command
-			GrammarBuilder testCommandGrammarBuilder = createCommandGrammarBuilder("test 1 2 3");
+			GrammarBuilder testCommandGrammarBuilder = createCommandGrammarBuilder(GENERIC_TEST_COMMAND);
 			Grammar testCommandGrammar = new Grammar(testCommandGrammarBuilder);
 			commandGrammars.Add(testCommandGrammar, "voiceCommander/voiceTest");
+
+#if DEBUG
+			Console.WriteLine(string.Format("Creating grammars took {0} ms", stopWatch.elapsed()));
+#endif
 
 			for (;;) {
 				try {
 					engine.UnloadAllGrammars();
+
+#if DEBUG
+					stopWatch.start();
+#endif
 					foreach (Grammar grammar in commandGrammars.Keys) {
 						engine.LoadGrammar(grammar);
 					}
+#if DEBUG
+					Console.WriteLine(string.Format("Loading grammars took {0} ms", stopWatch.elapsed()));
+#endif
+
 					engine.RecognizeAsync(RecognizeMode.Multiple);
 					break;
 				} catch (Exception) {
