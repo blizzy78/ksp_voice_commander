@@ -472,12 +472,11 @@ namespace VoiceServer {
 					}
 					break;
 
-				case "speed":
+				case "speedNumber":
 					{
 						GrammarBuilder grammar = new GrammarBuilder();
-						grammar.Append(createMacroChoices("plusMinus"));
 						grammar.Append(new SemanticResultKey("speed", speedNumberChoices));
-						grammar.Append(",");
+						grammar.Append(CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
 						grammar.Append(new SemanticResultKey("speedDecimal", decimalNumberChoices));
 						return grammar;
 					}
