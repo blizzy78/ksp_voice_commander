@@ -231,9 +231,10 @@ namespace VoiceCommander {
 		}
 
 		private void switchToNextVessel(VoiceCommandRecognizedEvent @event) {
-			Vessel next = FlightGlobals.FindNearestControllableVessel(FlightGlobals.ActiveVessel);
+			Vessel current = FlightGlobals.ActiveVessel;
+			Vessel next = FlightGlobals.FindNearestVesselWhere(current.GetWorldPos3D(), v => !v.Equals(current) && v.IsControllable).FirstOrDefault();
 			if (next != null) {
-				FlightGlobals.ForceSetActiveVessel(next);
+				FlightGlobals.SetActiveVessel(next);
 			}
 		}
 
