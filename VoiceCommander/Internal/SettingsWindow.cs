@@ -34,72 +34,22 @@ namespace VoiceCommander {
 		private const string COMMANDS_DOC_URL = "http://bit.ly/1lnCdEv";
 		private const long SET_KEY_WAIT_TIME = 5000;
 
-		internal Dictionary<VoiceCommand, string> Texts {
-			get;
-			private set;
-		}
-
-		internal string YawText {
-			get;
-			private set;
-		}
-		internal string PitchText {
-			get;
-			private set;
-		}
-		internal string RollText {
-			get;
-			private set;
-		}
-		internal string ProgradeText {
-			get;
-			private set;
-		}
-		internal string RetrogradeText {
-			get;
-			private set;
-		}
-		internal string NormalText {
-			get;
-			private set;
-		}
-		internal string AntiNormalText {
-			get;
-			private set;
-		}
-		internal string RadialText {
-			get;
-			private set;
-		}
-		internal string AntiRadialText {
-			get;
-			private set;
-		}
-		internal string ApoapsisText {
-			get;
-			private set;
-		}
-		internal string PeriapsisText {
-			get;
-			private set;
-		}
-		internal string ManeuverNodeText {
-			get;
-			private set;
-		}
-		internal string SoIText {
-			get;
-			private set;
-		}
-
-		internal bool PushToTalk {
-			get;
-			private set;
-		}
-		internal KeyCode PushToTalkKey {
-			get;
-			private set;
-		}
+		private Dictionary<VoiceCommand, string> Texts;
+		private string YawText;
+		private string PitchText;
+		private string RollText;
+		private string ProgradeText;
+		private string RetrogradeText;
+		private string NormalText;
+		private string AntiNormalText;
+		private string RadialText;
+		private string AntiRadialText;
+		private string ApoapsisText;
+		private string PeriapsisText;
+		private string ManeuverNodeText;
+		private string SoIText;
+		private bool PushToTalk;
+		private KeyCode PushToTalkKey;
 
 		private Settings settings;
 		private Action onOk;
@@ -285,11 +235,15 @@ namespace VoiceCommander {
 		private void drawButtons() {
 			GUILayout.BeginHorizontal();
 			GUILayout.FlexibleSpace();
+
+			bool oldEnabled = GUI.enabled;
+			GUI.enabled = !waitingForPushToTalkKey;
+			if (GUILayout.Button("Fill Default Texts")) {
+				fillDefaultTexts();
+			}
 			if (GUILayout.Button("Open Documentation")) {
 				Application.OpenURL(COMMANDS_DOC_URL);
 			}
-			bool oldEnabled = GUI.enabled;
-			GUI.enabled = !waitingForPushToTalkKey;
 			if (GUILayout.Button("OK")) {
 				onOk();
 			}
@@ -297,7 +251,38 @@ namespace VoiceCommander {
 				onCancel();
 			}
 			GUI.enabled = oldEnabled;
+
 			GUILayout.EndHorizontal();
+		}
+
+		private void fillDefaultTexts() {
+			fillDefaultMacroText(ref YawText, "yaw");
+			fillDefaultMacroText(ref PitchText, "pitch");
+			fillDefaultMacroText(ref RollText, "roll");
+			fillDefaultMacroText(ref ProgradeText, "prograde");
+			fillDefaultMacroText(ref RetrogradeText, "retrograde");
+			fillDefaultMacroText(ref NormalText, "normal");
+			fillDefaultMacroText(ref AntiNormalText, "anti-normal");
+			fillDefaultMacroText(ref RadialText, "radial");
+			fillDefaultMacroText(ref AntiRadialText, "anti-radial");
+			fillDefaultMacroText(ref ApoapsisText, "apoapsis");
+			fillDefaultMacroText(ref PeriapsisText, "periapsis");
+			fillDefaultMacroText(ref ManeuverNodeText, "maneuver node");
+			fillDefaultMacroText(ref SoIText, "sphere of influence");
+
+			foreach (VoiceCommand cmd in VoiceCommander.Instance.Namespaces.SelectMany(ns => ns.Commands)) {
+				if (!Texts.ContainsKey(cmd)) {
+					Texts.Add(cmd, cmd.DefaultText);
+				} else if (Texts[cmd] == string.Empty) {
+					Texts[cmd] = cmd.DefaultText;
+				}
+			}
+		}
+
+		private void fillDefaultMacroText(ref string text, string defaultText) {
+			if (string.IsNullOrEmpty(text)) {
+				text = defaultText;
+			}
 		}
 
 		private void initStyles() {

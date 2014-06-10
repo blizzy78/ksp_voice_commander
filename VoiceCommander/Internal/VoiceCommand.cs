@@ -39,5 +39,15 @@ namespace VoiceCommander {
 			get;
 			set;
 		}
+
+		internal string Label {
+			get;
+			private set;
+		}
+
+		internal string DefaultText {
+			get;
+			private set;
+		}
 	}
 }

@@ -35,15 +35,11 @@ namespace VoiceCommander {
 			private set;
 		}
 
-		internal string Label {
-			get;
-			private set;
-		}
-
-		public VoiceCommand(string id, string label, Action<VoiceCommandRecognizedEvent> callback) {
+		public VoiceCommand(string id, string label, string defaultText, Action<VoiceCommandRecognizedEvent> callback) {
 			this.Id = id;
 			this.Label = label;
 			this.Callback = callback;
+			this.DefaultText = defaultText;
 		}
 	}
 }

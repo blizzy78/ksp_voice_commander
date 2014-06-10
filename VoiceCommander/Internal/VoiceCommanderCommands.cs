@@ -42,7 +42,7 @@ namespace VoiceCommander {
 			Debug.Log("[VoiceCommander] registering Voice Commander commands");
 
 			ns = new VoiceCommandNamespace("voiceCommander", "Voice Commander");
-			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", (e) => VoiceCommander.Instance.toggleListen());
+			VoiceCommand toggleListenCmd = new VoiceCommand("toggleListen", "Toggle Listening", "listen up", (e) => VoiceCommander.Instance.toggleListen());
 			toggleListenCmd.ExecuteAlways = true;
 			ns += toggleListenCmd;
 

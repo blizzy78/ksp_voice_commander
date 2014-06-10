@@ -45,20 +45,20 @@ namespace VoiceCommanderMechJeb {
 			Debug.Log("[VoiceCommanderMechJeb] registering commands");
 
 			ns = new VoiceCommandNamespace("mechJeb", "MechJeb");
-			ns += new VoiceCommand("turnFlightDirection", "Turn into a Flight Direction", turnFlightDirection);
-			ns += new VoiceCommand("killRotation", "Kill Rotation", killRotation);
-			ns += new VoiceCommand("turnAxis", "Rotate About an Axis", rotateAxis);
-			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", createManeuverNodeCircularize);
-			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
-			ns += new VoiceCommand("stopExecutingManeuverNode", "Stop Executing Maneuver Node", stopExecutingManeuverNode);
-			ns += new VoiceCommand("removeAllManeuverNodes", "Remove All Maneuver Nodes", removeAllManeuverNodes);
-			ns += new VoiceCommand("warpTo", "Time Warp to an Event", warpTo);
-			ns += new VoiceCommand("killWarp", "Kill Time Warping", killWarp);
-			ns += new VoiceCommand("setTarget", "Set Target", setTarget);
-			ns += new VoiceCommand("unsetTarget", "Unset Target", unsetTarget);
-			ns += new VoiceCommand("keepVerticalSpeed", "Keep Vertical Speed", keepVerticalSpeed);
-			ns += new VoiceCommand("stopKeepVerticalSpeed", "Stop Keeping Vertical Speed", stopKeepVerticalSpeed);
-			ns += new VoiceCommand("toggleKillHorizontalSpeed", "Toggle Killing Horizontal Speed", toggleKillHorizontalSpeed);
+			ns += new VoiceCommand("turnFlightDirection", "Turn into a Flight Direction", "turn <flightDirection>", turnFlightDirection);
+			ns += new VoiceCommand("killRotation", "Kill Rotation", "kill rotation", killRotation);
+			ns += new VoiceCommand("turnAxis", "Rotate About an Axis", "rotate <axis> <plusMinus> <degreesNumber>", rotateAxis);
+			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", "circularize orbit at <apPe>", createManeuverNodeCircularize);
+			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", "execute maneuver", executeManeuverNode);
+			ns += new VoiceCommand("stopExecutingManeuverNode", "Stop Executing Maneuver Node", "stop maneuver", stopExecutingManeuverNode);
+			ns += new VoiceCommand("removeAllManeuverNodes", "Remove All Maneuver Nodes", "remove maneuver", removeAllManeuverNodes);
+			ns += new VoiceCommand("warpTo", "Time Warp to an Event", "time warp to <warpTarget>", warpTo);
+			ns += new VoiceCommand("killWarp", "Kill Time Warping", "stop time warp", killWarp);
+			ns += new VoiceCommand("setTarget", "Set Target", "target <vesselName>", setTarget);
+			ns += new VoiceCommand("unsetTarget", "Unset Target", "unset target", unsetTarget);
+			ns += new VoiceCommand("keepVerticalSpeed", "Keep Vertical Speed", "vertical <plusMinus> <speedNumber>", keepVerticalSpeed);
+			ns += new VoiceCommand("stopKeepVerticalSpeed", "Stop Keeping Vertical Speed", "vertical stop", stopKeepVerticalSpeed);
+			ns += new VoiceCommand("toggleKillHorizontalSpeed", "Toggle Killing Horizontal Speed", "kill horizontal", toggleKillHorizontalSpeed);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
