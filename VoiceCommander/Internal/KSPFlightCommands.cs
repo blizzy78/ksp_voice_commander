@@ -58,6 +58,8 @@ namespace VoiceCommander {
 			ns += new VoiceCommand("actionGroupRCS", "Toggle RCS", (e) => toggleActionGroup(KSPActionGroup.RCS));
 			ns += new VoiceCommand("toggleNavBall", "Toggle Nav Ball", toggleNavBall);
 			ns += new VoiceCommand("switchToVessel", "Switch to Vessel", switchToVessel);
+			ns += new VoiceCommand("switchToNextVessel", "Switch to Next Vessel", switchToNextVessel);
+			ns += new VoiceCommand("toggleSolarPanels", "Toggle All Solar Panels", toggleSolarPanels);
 
 			VoiceCommand pauseCommand = new VoiceCommand("pause", "Toggle Game Pause", pause);
 			pauseCommand.ExecuteAlways = true;
@@ -107,23 +109,21 @@ namespace VoiceCommander {
 		}
 
 		private void updateVesselNameMacroValues() {
-			if (HighLogic.LoadedSceneIsFlight) {
-				List<string> oldNames = new List<string>(this.vessels.Select(v => v.vesselName));
+			List<string> oldNames = new List<string>(this.vessels.Select(v => v.vesselName));
 
-				List<Vessel> newVessels = new List<Vessel>();
-				foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => canSwitchTo(v))) {
-					newVessels.Add(vessel);
-				}
+			List<Vessel> newVessels = new List<Vessel>();
+			foreach (Vessel vessel in FlightGlobals.Vessels.Where(v => canSwitchTo(v))) {
+				newVessels.Add(vessel);
+			}
 
-				newVessels.Sort((v1, v2) => oldNames.IndexOf(v1.vesselName) - oldNames.IndexOf(v2.vesselName));
+			newVessels.Sort((v1, v2) => oldNames.IndexOf(v1.vesselName) - oldNames.IndexOf(v2.vesselName));
 
-				List<string> newNames = new List<string>(newVessels.Select(v => v.vesselName));
+			List<string> newNames = new List<string>(newVessels.Select(v => v.vesselName));
 
-				if (!newNames.SequenceEqual(oldNames)) {
-					this.vessels = newVessels.ToArray();
-					VoiceCommander.Instance.Vessels = this.vessels;
-					VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", newNames.ToArray());
-				}
+			if (!newNames.SequenceEqual(oldNames)) {
+				this.vessels = newVessels.ToArray();
+				VoiceCommander.Instance.Vessels = this.vessels;
+				VoiceCommander.Instance.SetMacroValueTexts(ns, "vesselName", newNames.ToArray());
 			}
 		}
 
@@ -133,124 +133,117 @@ namespace VoiceCommander {
 		}
 
 		private void quickSave(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				QuickSaveLoad.QuickSave();
-			}
+			QuickSaveLoad.QuickSave();
 		}
 
 		private void quickLoad(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				HighLogic.CurrentGame = GamePersistence.LoadGame("quicksave", HighLogic.SaveFolder, true, false);
-				HighLogic.CurrentGame.startScene = GameScenes.FLIGHT;
-				HighLogic.CurrentGame.Start();
-			}
+			HighLogic.CurrentGame = GamePersistence.LoadGame("quicksave", HighLogic.SaveFolder, true, false);
+			HighLogic.CurrentGame.startScene = GameScenes.FLIGHT;
+			HighLogic.CurrentGame.Start();
 		}
 
 		private void toggleMap(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				if (MapView.MapIsEnabled) {
-					MapView.ExitMapView();
-				} else {
-					MapView.EnterMapView();
-				}
+			if (MapView.MapIsEnabled) {
+				MapView.ExitMapView();
+			} else {
+				MapView.EnterMapView();
 			}
 		}
 
 		private void setCameraMode(FlightCamera.Modes mode) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				FlightCamera.fetch.setMode(mode);
-			}
+			FlightCamera.fetch.setMode(mode);
 		}
 
 		private void activateStage(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				Staging.ActivateNextStage();
-			}
+			Staging.ActivateNextStage();
 		}
 
 		private void throttlePercent(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				setThrottle(float.Parse(@event.Parameters["percentNumber"]) / 100f);
-			}
+			setThrottle(float.Parse(@event.Parameters["percentNumber"]) / 100f);
 		}
 
 		private void setThrottle(float throttle) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				FlightInputHandler.state.mainThrottle = throttle;
-			}
+			FlightInputHandler.state.mainThrottle = throttle;
 		}
 
 		private void toggleActionGroup(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				KSPActionGroup group = KSPActionGroup.None;
-				switch (@event.Parameters["actionGroupNumber"]) {
-					case "1":
-						group = KSPActionGroup.Custom01;
-						break;
-					case "2":
-						group = KSPActionGroup.Custom02;
-						break;
-					case "3":
-						group = KSPActionGroup.Custom03;
-						break;
-					case "4":
-						group = KSPActionGroup.Custom04;
-						break;
-					case "5":
-						group = KSPActionGroup.Custom05;
-						break;
-					case "6":
-						group = KSPActionGroup.Custom06;
-						break;
-					case "7":
-						group = KSPActionGroup.Custom07;
-						break;
-					case "8":
-						group = KSPActionGroup.Custom08;
-						break;
-					case "9":
-						group = KSPActionGroup.Custom09;
-						break;
-					case "10":
-						group = KSPActionGroup.Custom10;
-						break;
-				}
-				if (group != KSPActionGroup.None) {
-					toggleActionGroup(group);
-				}
+			KSPActionGroup group = KSPActionGroup.None;
+			switch (@event.Parameters["actionGroupNumber"]) {
+				case "1":
+					group = KSPActionGroup.Custom01;
+					break;
+				case "2":
+					group = KSPActionGroup.Custom02;
+					break;
+				case "3":
+					group = KSPActionGroup.Custom03;
+					break;
+				case "4":
+					group = KSPActionGroup.Custom04;
+					break;
+				case "5":
+					group = KSPActionGroup.Custom05;
+					break;
+				case "6":
+					group = KSPActionGroup.Custom06;
+					break;
+				case "7":
+					group = KSPActionGroup.Custom07;
+					break;
+				case "8":
+					group = KSPActionGroup.Custom08;
+					break;
+				case "9":
+					group = KSPActionGroup.Custom09;
+					break;
+				case "10":
+					group = KSPActionGroup.Custom10;
+					break;
+			}
+			if (group != KSPActionGroup.None) {
+				toggleActionGroup(group);
 			}
 		}
 
 		private void toggleActionGroup(KSPActionGroup group) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				FlightGlobals.ActiveVessel.ActionGroups.ToggleGroup(group);
-			}
+			FlightGlobals.ActiveVessel.ActionGroups.ToggleGroup(group);
 		}
 
 		private void pause(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				if (FlightDriver.Pause) {
-					PauseMenu.Close();
-				} else {
-					PauseMenu.Display();
-				}
+			if (FlightDriver.Pause) {
+				PauseMenu.Close();
+			} else {
+				PauseMenu.Display();
 			}
 		}
 
 		private void toggleNavBall(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				if (FlightUIModeController.Instance.navBall.expanded) {
-					FlightUIModeController.Instance.navBall.Collapse();
-				} else {
-					FlightUIModeController.Instance.navBall.Expand();
-				}
+			if (FlightUIModeController.Instance.navBall.expanded) {
+				FlightUIModeController.Instance.navBall.Collapse();
+			} else {
+				FlightUIModeController.Instance.navBall.Expand();
 			}
 		}
 
 		private void switchToVessel(VoiceCommandRecognizedEvent @event) {
-			if (HighLogic.LoadedSceneIsFlight) {
-				int idx = int.Parse(@event.Parameters["vesselName"]);
-				FlightGlobals.SetActiveVessel(vessels[idx]);
+			int idx = int.Parse(@event.Parameters["vesselName"]);
+			FlightGlobals.SetActiveVessel(vessels[idx]);
+		}
+
+		private void switchToNextVessel(VoiceCommandRecognizedEvent @event) {
+			Vessel next = FlightGlobals.FindNearestControllableVessel(FlightGlobals.ActiveVessel);
+			if (next != null) {
+				FlightGlobals.ForceSetActiveVessel(next);
+			}
+		}
+
+		private void toggleSolarPanels(VoiceCommandRecognizedEvent @event) {
+			foreach (ModuleDeployableSolarPanel panel in FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleDeployableSolarPanel>()) {
+				if ((panel.panelState == ModuleDeployableSolarPanel.panelStates.EXTENDED) && panel.retractable) {
+					panel.Retract();
+				} else if (panel.panelState == ModuleDeployableSolarPanel.panelStates.RETRACTED) {
+					panel.Extend();
+				}
 			}
 		}
 	}
