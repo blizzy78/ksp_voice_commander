@@ -62,6 +62,8 @@ namespace VoiceServer {
 		private Choices degreesNumberChoices;
 		private Choices actionGroupNumberChoices;
 		private Choices percentNumberChoices;
+		private Choices speedNumberChoices;
+		private Choices decimalNumberChoices;
 		private Texts texts = new Texts();
 		private int regularGroupNumber;
 		private int macroGroupNumber;
@@ -79,15 +81,28 @@ namespace VoiceServer {
 			degreesNumberChoices = new Choices();
 			actionGroupNumberChoices = new Choices();
 			percentNumberChoices = new Choices();
+			speedNumberChoices = new Choices();
+			decimalNumberChoices = new Choices();
 			for (int i = 0; i <= 359; i++) {
 				SemanticResultValue value = new SemanticResultValue(i.ToString(), i);
+
+				degreesNumberChoices.Add(value);
+				
 				if ((i >= 1) && (i <= 10)) {
 					actionGroupNumberChoices.Add(value);
 				}
+				
 				if ((i >= 0) && (i <= 100)) {
 					percentNumberChoices.Add(value);
 				}
-				degreesNumberChoices.Add(value);
+				
+				if ((i >= 0) && (i <= 10)) {
+					speedNumberChoices.Add(value);
+				}
+				
+				if ((i >= 0) && (i <= 9)) {
+					decimalNumberChoices.Add(value);
+				}
 			}
 
 			RecognizerInfo recognizer = SpeechRecognitionEngine.InstalledRecognizers()[0];
@@ -381,9 +396,9 @@ namespace VoiceServer {
 					foreach (Capture capture in captures) {
 						groupNumber = captureGroups[capture];
 						if (groupNumber == macroGroupNumber) {
-							Choices macroChoices = createMacroChoices(capture.Value);
+							GrammarBuilder macroChoices = createMacroChoices(capture.Value);
 							if (macroChoices != null) {
-								commandGrammarBuilder.Append(new SemanticResultKey(capture.Value, macroChoices));
+								commandGrammarBuilder.Append(macroChoices);
 							} else {
 								return null;
 							}
@@ -398,24 +413,24 @@ namespace VoiceServer {
 			return null;
 		}
 
-		private Choices createMacroChoices(string macro) {
+		private GrammarBuilder createMacroChoices(string macro) {
 			switch (macro) {
 				case "plusMinus":
-					return plusMinusChoices;
+					return createSemanticChoicesBuilder(macro, plusMinusChoices);
 				case "degreesNumber":
-					return degreesNumberChoices;
+					return createSemanticChoicesBuilder(macro, degreesNumberChoices);
 				case "actionGroupNumber":
-					return actionGroupNumberChoices;
+					return createSemanticChoicesBuilder(macro, actionGroupNumberChoices);
 				case "percentNumber":
-					return percentNumberChoices;
+					return createSemanticChoicesBuilder(macro, percentNumberChoices);
 
 				case "axis":
 					lock (texts) {
 						if (texts.HaveAxisTexts) {
-							return new Choices(
+							return createSemanticChoicesBuilder(macro, new Choices(
 								new SemanticResultValue(texts.yawText, "yaw"),
 								new SemanticResultValue(texts.pitchText, "pitch"),
-								new SemanticResultValue(texts.rollText, "roll"));
+								new SemanticResultValue(texts.rollText, "roll")));
 						}
 					}
 					break;
@@ -423,14 +438,14 @@ namespace VoiceServer {
 				case "flightDirection":
 					lock (texts) {
 						if (texts.HaveFlightDirectionTexts) {
-							return new Choices(
+							return createSemanticChoicesBuilder(macro, new Choices(
 								new SemanticResultValue(texts.progradeText, "prograde"),
 								new SemanticResultValue(texts.retrogradeText, "retrograde"),
 								new SemanticResultValue(texts.normalText, "normal"),
 								new SemanticResultValue(texts.antiNormalText, "antiNormal"),
 								new SemanticResultValue(texts.radialText, "radial"),
 								new SemanticResultValue(texts.antiRadialText, "antiRadial"),
-								new SemanticResultValue(texts.maneuverNodeText, "maneuverNode"));
+								new SemanticResultValue(texts.maneuverNodeText, "maneuverNode")));
 						}
 					}
 					break;
@@ -438,9 +453,9 @@ namespace VoiceServer {
 				case "apPe":
 					lock (texts) {
 						if (texts.HaveApPeTexts) {
-							return new Choices(
+							return createSemanticChoicesBuilder(macro, new Choices(
 								new SemanticResultValue(texts.apoapsisText, "ap"),
-								new SemanticResultValue(texts.periapsisText, "pe"));
+								new SemanticResultValue(texts.periapsisText, "pe")));
 						}
 					}
 					break;
@@ -448,14 +463,24 @@ namespace VoiceServer {
 				case "warpTarget":
 					lock (texts) {
 						if (texts.HaveWarpTargetTexts) {
-							return new Choices(
+							return createSemanticChoicesBuilder(macro, new Choices(
 								new SemanticResultValue(texts.apoapsisText, "ap"),
 								new SemanticResultValue(texts.periapsisText, "pe"),
 								new SemanticResultValue(texts.maneuverNodeText, "maneuverNode"),
-								new SemanticResultValue(texts.soiText, "SoI"));
+								new SemanticResultValue(texts.soiText, "SoI")));
 						}
 					}
 					break;
+
+				case "speed":
+					{
+						GrammarBuilder grammar = new GrammarBuilder();
+						grammar.Append(createMacroChoices("plusMinus"));
+						grammar.Append(new SemanticResultKey("speed", speedNumberChoices));
+						grammar.Append(",");
+						grammar.Append(new SemanticResultKey("speedDecimal", decimalNumberChoices));
+						return grammar;
+					}
 
 				default:
 					lock (texts) {
@@ -465,12 +490,16 @@ namespace VoiceServer {
 							for (int i = 0; i < valueTexts.Count(); i++) {
 								choices.Add(new SemanticResultValue(valueTexts[i], i.ToString()));
 							}
-							return choices;
+							return createSemanticChoicesBuilder(macro, choices);
 						}
 					}
 					break;
 			}
 			return null;
+		}
+
+		private GrammarBuilder createSemanticChoicesBuilder(string semanticKey, Choices choices) {
+			return new SemanticResultKey(semanticKey, choices);
 		}
 
 		private List<string> getMacroValueTexts(string macroId) {

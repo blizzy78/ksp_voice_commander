@@ -56,6 +56,9 @@ namespace VoiceCommanderMechJeb {
 			ns += new VoiceCommand("killWarp", "Kill Time Warping", killWarp);
 			ns += new VoiceCommand("setTarget", "Set Target", setTarget);
 			ns += new VoiceCommand("unsetTarget", "Unset Target", unsetTarget);
+			ns += new VoiceCommand("keepVerticalSpeed", "Keep Vertical Speed", keepVerticalSpeed);
+			ns += new VoiceCommand("stopKeepVerticalSpeed", "Stop Keeping Vertical Speed", stopKeepVerticalSpeed);
+			ns += new VoiceCommand("toggleKillHorizontalSpeed", "Toggle Killing Horizontal Speed", toggleKillHorizontalSpeed);
 
 			VoiceCommander.VoiceCommander.Instance.AddNamespace(ns);
 		}
@@ -246,6 +249,38 @@ namespace VoiceCommanderMechJeb {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
 				mechJeb.target.Unset();
+			}
+		}
+
+		private void keepVerticalSpeed(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				string plusMinus = @event.Parameters["plusMinus"];
+				int speed = int.Parse(@event.Parameters["speed"]);
+				int speedDecimal = int.Parse(@event.Parameters["speedDecimal"]);
+				float targetSpeed = (float) speed + (float) speedDecimal / 10f;
+				if (plusMinus == "-") {
+					targetSpeed = -targetSpeed;
+				}
+				mechJeb.thrust.tmode = MechJebModuleThrustController.TMode.KEEP_VERTICAL;
+				mechJeb.thrust.trans_spd_act = targetSpeed;
+				mechJeb.thrust.users.Add(this);
+			}
+		}
+
+		private void stopKeepVerticalSpeed(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				mechJeb.thrust.tmode = MechJebModuleThrustController.TMode.OFF;
+				mechJeb.thrust.ThrustOff();
+				mechJeb.thrust.users.Remove(this);
+			}
+		}
+
+		private void toggleKillHorizontalSpeed(VoiceCommandRecognizedEvent @event) {
+			MechJebCore mechJeb = getMechJeb();
+			if (mechJeb != null) {
+				mechJeb.thrust.trans_kill_h = !mechJeb.thrust.trans_kill_h;
 			}
 		}
 
