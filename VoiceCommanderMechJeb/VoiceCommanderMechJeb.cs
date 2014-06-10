@@ -47,7 +47,7 @@ namespace VoiceCommanderMechJeb {
 			ns = new VoiceCommandNamespace("mechJeb", "MechJeb");
 			ns += new VoiceCommand("turnFlightDirection", "Turn into a Flight Direction", turnFlightDirection);
 			ns += new VoiceCommand("killRotation", "Kill Rotation", killRotation);
-			ns += new VoiceCommand("turnAxis", "Turn About an Axis", turnAxis);
+			ns += new VoiceCommand("turnAxis", "Rotate About an Axis", rotateAxis);
 			ns += new VoiceCommand("createManeuverNodeCircularize", "Create Maneuver Node to Circularize Orbit", createManeuverNodeCircularize);
 			ns += new VoiceCommand("executeManeuverNode", "Execute Maneuver Node", executeManeuverNode);
 			ns += new VoiceCommand("stopExecutingManeuverNode", "Stop Executing Maneuver Node", stopExecutingManeuverNode);
@@ -113,7 +113,7 @@ namespace VoiceCommanderMechJeb {
 			}
 		}
 
-		private void turnAxis(VoiceCommandRecognizedEvent @event) {
+		private void rotateAxis(VoiceCommandRecognizedEvent @event) {
 			MechJebCore mechJeb = getMechJeb();
 			if (mechJeb != null) {
 				string axis = @event.Parameters["axis"];
