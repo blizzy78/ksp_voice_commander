@@ -39,7 +39,6 @@ namespace VoiceCommander {
 	public partial class VoiceCommander : MonoBehaviour {
 		internal const int VERSION = 4;
 
-		private static readonly string SETTINGS_FILE = KSPUtil.ApplicationRootPath + "GameData/blizzy/VoiceCommander/settings.dat";
 		private const string HOST = "127.0.0.1";
 		private const int CLIENT_PORT = 48285;
 		private const int SERVER_PORT = 48286;
@@ -58,6 +57,7 @@ namespace VoiceCommander {
 
 		private IPEndPoint clientEndPoint;
 		private IPEndPoint serverEndPoint;
+		private Settings settings;
 		private UdpClient client;
 		private List<VoicePacket> packets = new List<VoicePacket>();
 		private IButton button;
@@ -65,28 +65,12 @@ namespace VoiceCommander {
 		private bool pushToTalkListening;
 		private long pushToTalkListeningStopped;
 		private SettingsWindow settingsWindow;
-		private Dictionary<string, List<string>> texts;
-		private string yawText;
-		private string pitchText;
-		private string rollText;
-		private string progradeText;
-		private string retrogradeText;
-		private string normalText;
-		private string antiNormalText;
-		private string radialText;
-		private string antiRadialText;
-		private string apoapsisText;
-		private string periapsisText;
-		private string maneuverNodeText;
-		private string soiText;
-		private bool pushToTalk;
-		private KeyCode pushToTalkKey = KeyCode.None;
 		private Dictionary<string, string[]> macroValueTexts = new Dictionary<string, string[]>();
 		private UpdateChecker updateChecker;
 
 		private bool ReactToCommands {
 			get {
-				return pushToTalk ? pushToTalkListening : listening;
+				return settings.pushToTalk ? pushToTalkListening : listening;
 			}
 		}
 
@@ -111,7 +95,7 @@ namespace VoiceCommander {
 		private void Awake() {
 			GameObject.DontDestroyOnLoad(this);
 
-			loadSettings();
+			settings = Settings.load();
 
 			clientEndPoint = new IPEndPoint(IPAddress.Parse(HOST), CLIENT_PORT);
 			serverEndPoint = new IPEndPoint(IPAddress.Parse(HOST), SERVER_PORT);
@@ -153,7 +137,7 @@ namespace VoiceCommander {
 		}
 
 		private void OnDestroy() {
-			saveSettings();
+			settings.save();
 
 			client.Close();
 			button.Destroy();
@@ -220,7 +204,7 @@ namespace VoiceCommander {
 				string command = parameters["command"];
 				VoiceCommand cmd = findCommand(command);
 				if (cmd != null) {
-					bool react = ReactToCommands || (pushToTalk && IsInPushToTalkGracePeriod);
+					bool react = ReactToCommands || (settings.pushToTalk && IsInPushToTalkGracePeriod);
 					if ((react && !isGamePaused()) || cmd.ExecuteAlways) {
 						button.Drawable = new InfoDrawable(button, string.Format("{0} ({1:F1}%)", cmd.Label, confidence * 100f));
 						try {
@@ -281,47 +265,21 @@ namespace VoiceCommander {
 		private void updateCommandsOnServer() {
 			sendPacketToServer(new VoicePacket(PacketType.CLEAR_COMMANDS));
 
-			if (!string.IsNullOrEmpty(yawText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_YAW_COMMAND, yawText));
-			}
-			if (!string.IsNullOrEmpty(pitchText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_PITCH_COMMAND, pitchText));
-			}
-			if (!string.IsNullOrEmpty(rollText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_ROLL_COMMAND, rollText));
-			}
-			if (!string.IsNullOrEmpty(progradeText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_PROGRADE_COMMAND, progradeText));
-			}
-			if (!string.IsNullOrEmpty(retrogradeText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_RETROGRADE_COMMAND, retrogradeText));
-			}
-			if (!string.IsNullOrEmpty(normalText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_NORMAL_COMMAND, normalText));
-			}
-			if (!string.IsNullOrEmpty(antiNormalText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_ANTI_NORMAL_COMMAND, antiNormalText));
-			}
-			if (!string.IsNullOrEmpty(radialText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_RADIAL_COMMAND, radialText));
-			}
-			if (!string.IsNullOrEmpty(antiRadialText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_ANTI_RADIAL_COMMAND, antiRadialText));
-			}
-			if (!string.IsNullOrEmpty(apoapsisText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_APOAPSIS_COMMAND, apoapsisText));
-			}
-			if (!string.IsNullOrEmpty(periapsisText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_PERIAPSIS_COMMAND, periapsisText));
-			}
-			if (!string.IsNullOrEmpty(maneuverNodeText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_MANEUVER_NODE_COMMAND, maneuverNodeText));
-			}
-			if (!string.IsNullOrEmpty(soiText)) {
-				sendPacketToServer(new VoicePacket(PacketType.SET_SOI_COMMAND, soiText));
-			}
+			sendSpecialTextToServer(PacketType.SET_YAW_COMMAND, settings.yawText);
+			sendSpecialTextToServer(PacketType.SET_PITCH_COMMAND, settings.pitchText);
+			sendSpecialTextToServer(PacketType.SET_ROLL_COMMAND, settings.rollText);
+			sendSpecialTextToServer(PacketType.SET_PROGRADE_COMMAND, settings.progradeText);
+			sendSpecialTextToServer(PacketType.SET_RETROGRADE_COMMAND, settings.retrogradeText);
+			sendSpecialTextToServer(PacketType.SET_NORMAL_COMMAND, settings.normalText);
+			sendSpecialTextToServer(PacketType.SET_ANTI_NORMAL_COMMAND, settings.antiNormalText);
+			sendSpecialTextToServer(PacketType.SET_RADIAL_COMMAND, settings.radialText);
+			sendSpecialTextToServer(PacketType.SET_ANTI_RADIAL_COMMAND, settings.antiRadialText);
+			sendSpecialTextToServer(PacketType.SET_APOAPSIS_COMMAND, settings.apoapsisText);
+			sendSpecialTextToServer(PacketType.SET_PERIAPSIS_COMMAND, settings.periapsisText);
+			sendSpecialTextToServer(PacketType.SET_MANEUVER_NODE_COMMAND, settings.maneuverNodeText);
+			sendSpecialTextToServer(PacketType.SET_SOI_COMMAND, settings.soiText);
 
-			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
+			foreach (KeyValuePair<string, List<string>> cmdEntry in settings.texts) {
 				foreach (string text in cmdEntry.Value) {
 					sendPacketToServer(new VoicePacket(PacketType.ADD_COMMAND, cmdEntry.Key + "|" + text));
 				}
@@ -334,6 +292,12 @@ namespace VoiceCommander {
 			}
 
 			sendPacketToServer(new VoicePacket(PacketType.END_OF_COMMANDS));
+		}
+
+		private void sendSpecialTextToServer(PacketType type, string text) {
+			if (!string.IsNullOrEmpty(text)) {
+				sendPacketToServer(new VoicePacket(type, text));
+			}
 		}
 
 		private void sendPacketToServer(VoicePacket packet) {
@@ -354,61 +318,22 @@ namespace VoiceCommander {
 			if (settingsWindow != null) {
 				settingsWindow = null;
 			} else {
-				Dictionary<VoiceCommand, string> dlgTexts = new Dictionary<VoiceCommand, string>();
-				foreach (VoiceCommandNamespace ns in VoiceCommander.Instance.Namespaces) {
-					foreach (VoiceCommand cmd in ns.Commands) {
-						string fullCommandId = ns.Id + "/" + cmd.Id;
-						string dlgText = string.Empty;
-						if (texts.ContainsKey(fullCommandId)) {
-							dlgText = string.Join("\n", texts[fullCommandId].ToArray());
-						}
-						dlgTexts.Add(cmd, dlgText);
-					}
-				}
-				bool oldPushToTalk = pushToTalk;
-				settingsWindow = new SettingsWindow(dlgTexts,
-					yawText, pitchText, rollText,
-					progradeText, retrogradeText, normalText, antiNormalText, radialText, antiRadialText,
-					apoapsisText, periapsisText, maneuverNodeText, soiText,
-					pushToTalk, pushToTalkKey,
+				bool oldPushToTalk = settings.pushToTalk;
+				settingsWindow = new SettingsWindow(settings,
 					() => {
-						yawText = settingsWindow.YawText;
-						pitchText = settingsWindow.PitchText;
-						rollText = settingsWindow.RollText;
-						progradeText = settingsWindow.ProgradeText;
-						retrogradeText = settingsWindow.RetrogradeText;
-						normalText = settingsWindow.NormalText;
-						antiNormalText = settingsWindow.AntiNormalText;
-						radialText = settingsWindow.RadialText;
-						antiRadialText = settingsWindow.AntiRadialText;
-						apoapsisText = settingsWindow.ApoapsisText;
-						periapsisText = settingsWindow.PeriapsisText;
-						maneuverNodeText = settingsWindow.ManeuverNodeText;
-						soiText = settingsWindow.SoIText;
-
-						pushToTalk = settingsWindow.PushToTalk;
-						pushToTalkKey = settingsWindow.PushToTalkKey;
-
-						dlgTexts = settingsWindow.Texts;
-						foreach (KeyValuePair<VoiceCommand, string> entry in dlgTexts) {
-							VoiceCommand cmd = entry.Key;
-							List<string> cmdTexts = new List<string>(entry.Value.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
-							VoiceCommandNamespace ns = Namespaces.FirstOrDefault(n => n.Commands.Contains(cmd));
-							string fullCommandId = ns.Id + "/" + cmd.Id;
-							texts[fullCommandId] = cmdTexts;
-						}
-
+						settingsWindow.saveToSettings();
 						settingsWindow = null;
 
 						// if push-to-talk has been switched off, activate regular listening mode to avoid confusion
-						// (why is it still not listening??)
-						if (!pushToTalk && oldPushToTalk) {
+						// ("why is it still not listening??")
+						if (!settings.pushToTalk && oldPushToTalk) {
 							listening = true;
 						}
 
 						updateButtonIcon();
 
-						saveSettings();
+						settings.save();
+
 						updateCommandsOnServer();
 					}, () => {
 						settingsWindow = null;
@@ -416,114 +341,10 @@ namespace VoiceCommander {
 			}
 		}
 
-		private void loadSettings() {
-			ConfigNode rootNode = ConfigNode.Load(SETTINGS_FILE) ?? new ConfigNode();
-
-			pushToTalk = rootNode.get("pushToTalk", false);
-			string pushToTalkKeyStr = rootNode.get("pushToTalkKey", KeyCode.None.ToString());
-			pushToTalkKey = (KeyCode) Enum.Parse(typeof(KeyCode), pushToTalkKeyStr);
-
-			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
-			yawText = textsNode.get("yaw", (string) null);
-			pitchText = textsNode.get("pitch", (string) null);
-			rollText = textsNode.get("roll", (string) null);
-			progradeText = textsNode.get("prograde", (string) null);
-			retrogradeText = textsNode.get("retrograde", (string) null);
-			normalText = textsNode.get("normal", (string) null);
-			antiNormalText = textsNode.get("antiNormal", (string) null);
-			radialText = textsNode.get("radial", (string) null);
-			antiRadialText = textsNode.get("antiRadial", (string) null);
-			apoapsisText = textsNode.get("apoapsis", (string) null);
-			periapsisText = textsNode.get("periapsis", (string) null);
-			maneuverNodeText = textsNode.get("maneuverNode", (string) null);
-			soiText = textsNode.get("SoI", (string) null);
-
-			texts = new Dictionary<string, List<string>>();
-			foreach (ConfigNode nsNode in textsNode.nodes) {
-				string ns = nsNode.name;
-				foreach (ConfigNode.Value value in nsNode.values) {
-					string cmd = value.name;
-					string text = value.value;
-
-					List<string> cmdTexts;
-					string fullCommandId = ns + "/" + cmd;
-					if (texts.ContainsKey(fullCommandId)) {
-						cmdTexts = texts[fullCommandId];
-					} else {
-						cmdTexts = new List<string>();
-						texts.Add(fullCommandId, cmdTexts);
-					}
-					cmdTexts.Add(text);
-				}
-			}
-		}
-
-		private void saveSettings() {
-			ConfigNode rootNode = new ConfigNode();
-
-			rootNode.overwrite("pushToTalk", pushToTalk);
-			rootNode.overwrite("pushToTalkKey", pushToTalkKey.ToString());
-
-			ConfigNode textsNode = rootNode.getOrCreateNode("texts");
-			if (!string.IsNullOrEmpty(yawText)) {
-				textsNode.overwrite("yaw", yawText);
-			}
-			if (!string.IsNullOrEmpty(pitchText)) {
-				textsNode.overwrite("pitch", pitchText);
-			}
-			if (!string.IsNullOrEmpty(rollText)) {
-				textsNode.overwrite("roll", rollText);
-			}
-			if (!string.IsNullOrEmpty(progradeText)) {
-				textsNode.overwrite("prograde", progradeText);
-			}
-			if (!string.IsNullOrEmpty(retrogradeText)) {
-				textsNode.overwrite("retrograde", retrogradeText);
-			}
-			if (!string.IsNullOrEmpty(normalText)) {
-				textsNode.overwrite("normal", normalText);
-			}
-			if (!string.IsNullOrEmpty(antiNormalText)) {
-				textsNode.overwrite("antiNormal", antiNormalText);
-			}
-			if (!string.IsNullOrEmpty(radialText)) {
-				textsNode.overwrite("radial", radialText);
-			}
-			if (!string.IsNullOrEmpty(antiRadialText)) {
-				textsNode.overwrite("antiRadial", antiRadialText);
-			}
-			if (!string.IsNullOrEmpty(apoapsisText)) {
-				textsNode.overwrite("apoapsis", apoapsisText);
-			}
-			if (!string.IsNullOrEmpty(periapsisText)) {
-				textsNode.overwrite("periapsis", periapsisText);
-			}
-			if (!string.IsNullOrEmpty(maneuverNodeText)) {
-				textsNode.overwrite("maneuverNode", maneuverNodeText);
-			}
-			if (!string.IsNullOrEmpty(soiText)) {
-				textsNode.overwrite("SoI", soiText);
-			}
-
-			foreach (KeyValuePair<string, List<string>> cmdEntry in texts) {
-				string[] parts = cmdEntry.Key.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-				string ns = parts[0];
-				string cmd = parts[1];
-				ConfigNode nsNode = textsNode.getOrCreateNode(ns);
-				foreach (string text in cmdEntry.Value) {
-					if (text != string.Empty) {
-						nsNode.AddValue(cmd, text);
-					}
-				}
-			}
-
-			rootNode.Save(SETTINGS_FILE);
-		}
-
 		private void handlePushToTalk() {
 			bool newPushToTalkListening;
-			if (Input.anyKey && (GUIUtility.keyboardControl == 0) && pushToTalk && (pushToTalkKey != KeyCode.None)) {
-				newPushToTalkListening = Utils.getCurrentInputKey() == pushToTalkKey;
+			if (Input.anyKey && (GUIUtility.keyboardControl == 0) && settings.pushToTalk && (settings.pushToTalkKey != KeyCode.None)) {
+				newPushToTalkListening = Utils.getCurrentInputKey() == settings.pushToTalkKey;
 			} else {
 				newPushToTalkListening = false;
 			}

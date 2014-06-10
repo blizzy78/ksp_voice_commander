@@ -40,7 +40,9 @@ namespace VoiceCommander {
 			if (configNode.HasValue(name)) {
 				configNode.RemoveValue(name);
 			}
-			configNode.AddValue(name, value);
+			if (value != null) {
+				configNode.AddValue(name, value);
+			}
 		}
 
 		internal static ConfigNode overwriteNode(this ConfigNode configNode, string nodeName) {

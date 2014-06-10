@@ -101,6 +101,7 @@ namespace VoiceCommander {
 			private set;
 		}
 
+		private Settings settings;
 		private Action onOk;
 		private Action onCancel;
 		private int id = UnityEngine.Random.Range(0, int.MaxValue);
@@ -111,33 +112,67 @@ namespace VoiceCommander {
 		private GUIStyle rightAlignedLabelStyle;
 		private bool stylesInitialized;
 
-		internal SettingsWindow(Dictionary<VoiceCommand, string> texts,
-			string yawText, string pitchText, string rollText,
-			string progradeText, string retrogradeText, string normalText, string antiNormalText, string radialText, string antiRadialText,
-			string apoapsisText, string periapsisText, string maneuverNodeText, string soiText,
-			bool pushToTalk, KeyCode pushToTalkKey, Action onOk, Action onCancel) {
+		internal SettingsWindow(Settings settings, Action onOk, Action onCancel) {
+			this.settings = settings;
 
-			this.Texts = texts;
+			Texts = new Dictionary<VoiceCommand, string>();
+			foreach (VoiceCommandNamespace ns in VoiceCommander.Instance.Namespaces) {
+				foreach (VoiceCommand cmd in ns.Commands) {
+					string fullCommandId = ns.Id + "/" + cmd.Id;
+					string dlgText = string.Empty;
+					if (settings.texts.ContainsKey(fullCommandId)) {
+						dlgText = string.Join("\n", settings.texts[fullCommandId].ToArray());
+					}
+					Texts.Add(cmd, dlgText);
+				}
+			}
 
-			this.YawText = yawText;
-			this.PitchText = pitchText;
-			this.RollText = rollText;
-			this.ProgradeText = progradeText;
-			this.RetrogradeText = retrogradeText;
-			this.NormalText = normalText;
-			this.AntiNormalText = antiNormalText;
-			this.RadialText = radialText;
-			this.AntiRadialText = antiRadialText;
-			this.ApoapsisText = apoapsisText;
-			this.PeriapsisText = periapsisText;
-			this.ManeuverNodeText = maneuverNodeText;
-			this.SoIText = soiText;
+			this.YawText = settings.yawText;
+			this.PitchText = settings.pitchText;
+			this.RollText = settings.rollText;
+			this.ProgradeText = settings.progradeText;
+			this.RetrogradeText = settings.retrogradeText;
+			this.NormalText = settings.normalText;
+			this.AntiNormalText = settings.antiNormalText;
+			this.RadialText = settings.radialText;
+			this.AntiRadialText = settings.antiRadialText;
+			this.ApoapsisText = settings.apoapsisText;
+			this.PeriapsisText = settings.periapsisText;
+			this.ManeuverNodeText = settings.maneuverNodeText;
+			this.SoIText = settings.soiText;
 
-			this.PushToTalk = pushToTalk;
-			this.PushToTalkKey = pushToTalkKey;
+			this.PushToTalk = settings.pushToTalk;
+			this.PushToTalkKey = settings.pushToTalkKey;
 
 			this.onOk = onOk;
 			this.onCancel = onCancel;
+		}
+
+		internal void saveToSettings() {
+			settings.yawText = YawText;
+			settings.pitchText = PitchText;
+			settings.rollText = RollText;
+			settings.progradeText = ProgradeText;
+			settings.retrogradeText = RetrogradeText;
+			settings.normalText = NormalText;
+			settings.antiNormalText = AntiNormalText;
+			settings.radialText = RadialText;
+			settings.antiRadialText = AntiRadialText;
+			settings.apoapsisText = ApoapsisText;
+			settings.periapsisText = PeriapsisText;
+			settings.maneuverNodeText = ManeuverNodeText;
+			settings.soiText = SoIText;
+
+			settings.pushToTalk = PushToTalk;
+			settings.pushToTalkKey = PushToTalkKey;
+
+			foreach (KeyValuePair<VoiceCommand, string> entry in Texts) {
+				VoiceCommand cmd = entry.Key;
+				List<string> cmdTexts = new List<string>(entry.Value.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+				VoiceCommandNamespace ns = VoiceCommander.Instance.Namespaces.FirstOrDefault(n => n.Commands.Contains(cmd));
+				string fullCommandId = ns.Id + "/" + cmd.Id;
+				settings.texts[fullCommandId] = cmdTexts;
+			}
 		}
 
 		internal void draw() {
