@@ -62,50 +62,9 @@ namespace VoiceServer {
 		private Choices degreesNumberChoices;
 		private Choices actionGroupNumberChoices;
 		private Choices percentNumberChoices;
-		private Dictionary<string, List<string>> commands = new Dictionary<string, List<string>>();
-		private string yawText;
-		private string pitchText;
-		private string rollText;
-		private string progradeText;
-		private string retrogradeText;
-		private string normalText;
-		private string antiNormalText;
-		private string radialText;
-		private string antiRadialText;
-		private string apoapsisText;
-		private string periapsisText;
-		private string maneuverNodeText;
-		private string soiText;
-		private Dictionary<string, List<string>> macroValueTexts = new Dictionary<string, List<string>>();
+		private Texts texts = new Texts();
 		private int regularGroupNumber;
 		private int macroGroupNumber;
-
-		private bool HaveAxisTexts {
-			get {
-				return !string.IsNullOrEmpty(yawText) && !string.IsNullOrEmpty(pitchText) && !string.IsNullOrEmpty(rollText);
-			}
-		}
-
-		private bool HaveFlightDirectionTexts {
-			get {
-				return !string.IsNullOrEmpty(progradeText) && !string.IsNullOrEmpty(retrogradeText) && !string.IsNullOrEmpty(normalText) &&
-					!string.IsNullOrEmpty(antiNormalText) && !string.IsNullOrEmpty(radialText) && !string.IsNullOrEmpty(antiRadialText) &&
-					!string.IsNullOrEmpty(maneuverNodeText);
-			}
-		}
-
-		private bool HaveApPeTexts {
-			get {
-				return !string.IsNullOrEmpty(apoapsisText) && !string.IsNullOrEmpty(periapsisText);
-			}
-		}
-
-		private bool HaveWarpTargetTexts {
-			get {
-				return !string.IsNullOrEmpty(apoapsisText) && !string.IsNullOrEmpty(periapsisText) &&
-					!string.IsNullOrEmpty(maneuverNodeText) && !string.IsNullOrEmpty(soiText);
-			}
-		}
 
 		public static void Main(string[] args) {
 			new VoiceServer();
@@ -199,24 +158,10 @@ namespace VoiceServer {
 				IPEndPoint senderEndPoint = new IPEndPoint(IPAddress.Any, 0);
 				byte[] data = client.EndReceive(result, ref senderEndPoint);
 				VoicePacket packet = VoicePacket.FromPacket(data);
-				lock (commands) {
+				lock (texts) {
 					switch (packet.Type) {
 						case PacketType.CLEAR_COMMANDS:
-							commands.Clear();
-							macroValueTexts.Clear();
-							yawText = null;
-							pitchText = null;
-							rollText = null;
-							progradeText = null;
-							retrogradeText = null;
-							normalText = null;
-							antiNormalText = null;
-							radialText = null;
-							antiRadialText = null;
-							apoapsisText = null;
-							periapsisText = null;
-							maneuverNodeText = null;
-							soiText = null;
+							texts.clear();
 #if DEBUG
 							Console.WriteLine("Commands cleared.");
 #endif
@@ -228,11 +173,11 @@ namespace VoiceServer {
 								string fullCmdId = parts[0];
 								string text = parts[1];
 								List<string> cmdTexts;
-								if (commands.ContainsKey(fullCmdId)) {
-									cmdTexts = commands[fullCmdId];
+								if (texts.commands.ContainsKey(fullCmdId)) {
+									cmdTexts = texts.commands[fullCmdId];
 								} else {
 									cmdTexts = new List<string>();
-									commands.Add(fullCmdId, cmdTexts);
+									texts.commands.Add(fullCmdId, cmdTexts);
 								}
 								cmdTexts.Add(text);
 #if DEBUG
@@ -247,11 +192,11 @@ namespace VoiceServer {
 								string fullMacroId = parts[0];
 								string text = parts[1];
 								List<string> valueTexts;
-								if (macroValueTexts.ContainsKey(fullMacroId)) {
-									valueTexts = macroValueTexts[fullMacroId];
+								if (texts.macroValueTexts.ContainsKey(fullMacroId)) {
+									valueTexts = texts.macroValueTexts[fullMacroId];
 								} else {
 									valueTexts = new List<string>();
-									macroValueTexts.Add(fullMacroId, valueTexts);
+									texts.macroValueTexts.Add(fullMacroId, valueTexts);
 								}
 								valueTexts.Add(text);
 #if DEBUG
@@ -266,79 +211,79 @@ namespace VoiceServer {
 							break;
 
 						case PacketType.SET_YAW_COMMAND:
-							yawText = packet.Data;
+							texts.yawText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'yaw' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_PITCH_COMMAND:
-							pitchText = packet.Data;
+							texts.pitchText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'pitch' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_ROLL_COMMAND:
-							rollText = packet.Data;
+							texts.rollText = packet.Data;
 #if DEBUG	
 							Console.WriteLine(string.Format("Set 'roll' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_PROGRADE_COMMAND:
-							progradeText = packet.Data;
+							texts.progradeText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'prograde' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_RETROGRADE_COMMAND:
-							retrogradeText = packet.Data;
+							texts.retrogradeText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'retrograde' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_NORMAL_COMMAND:
-							normalText = packet.Data;
+							texts.normalText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'normal' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_ANTI_NORMAL_COMMAND:
-							antiNormalText = packet.Data;
+							texts.antiNormalText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'anti-normal' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_RADIAL_COMMAND:
-							radialText = packet.Data;
+							texts.radialText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'radial' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_ANTI_RADIAL_COMMAND:
-							antiRadialText = packet.Data;
+							texts.antiRadialText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'anti-radial' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_APOAPSIS_COMMAND:
-							apoapsisText = packet.Data;
+							texts.apoapsisText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'apoapsis' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_PERIAPSIS_COMMAND:
-							periapsisText = packet.Data;
+							texts.periapsisText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'periapsis' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_MANEUVER_NODE_COMMAND:
-							maneuverNodeText = packet.Data;
+							texts.maneuverNodeText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'maneuver node' command: {0}", packet.Data));
 #endif
 							break;
 						case PacketType.SET_SOI_COMMAND:
-							soiText = packet.Data;
+							texts.soiText = packet.Data;
 #if DEBUG
 							Console.WriteLine(string.Format("Set 'sphere of influence' command: {0}", packet.Data));
 #endif
@@ -362,7 +307,7 @@ namespace VoiceServer {
 			StopWatch stopWatch = new StopWatch().start();
 #endif
 
-			foreach (KeyValuePair<string, List<string>> cmdEntry in commands) {
+			foreach (KeyValuePair<string, List<string>> cmdEntry in texts.commands) {
 				foreach (string text in cmdEntry.Value) {
 					GrammarBuilder commandGrammarBuilder = createCommandGrammarBuilder(text);
 					if (commandGrammarBuilder != null) {
@@ -465,60 +410,60 @@ namespace VoiceServer {
 					return percentNumberChoices;
 
 				case "axis":
-					lock (commands) {
-						if (HaveAxisTexts) {
+					lock (texts) {
+						if (texts.HaveAxisTexts) {
 							return new Choices(
-								new SemanticResultValue(yawText, "yaw"),
-								new SemanticResultValue(pitchText, "pitch"),
-								new SemanticResultValue(rollText, "roll"));
+								new SemanticResultValue(texts.yawText, "yaw"),
+								new SemanticResultValue(texts.pitchText, "pitch"),
+								new SemanticResultValue(texts.rollText, "roll"));
 						}
 					}
 					break;
 
 				case "flightDirection":
-					lock (commands) {
-						if (HaveFlightDirectionTexts) {
+					lock (texts) {
+						if (texts.HaveFlightDirectionTexts) {
 							return new Choices(
-								new SemanticResultValue(progradeText, "prograde"),
-								new SemanticResultValue(retrogradeText, "retrograde"),
-								new SemanticResultValue(normalText, "normal"),
-								new SemanticResultValue(antiNormalText, "antiNormal"),
-								new SemanticResultValue(radialText, "radial"),
-								new SemanticResultValue(antiRadialText, "antiRadial"),
-								new SemanticResultValue(maneuverNodeText, "maneuverNode"));
+								new SemanticResultValue(texts.progradeText, "prograde"),
+								new SemanticResultValue(texts.retrogradeText, "retrograde"),
+								new SemanticResultValue(texts.normalText, "normal"),
+								new SemanticResultValue(texts.antiNormalText, "antiNormal"),
+								new SemanticResultValue(texts.radialText, "radial"),
+								new SemanticResultValue(texts.antiRadialText, "antiRadial"),
+								new SemanticResultValue(texts.maneuverNodeText, "maneuverNode"));
 						}
 					}
 					break;
 
 				case "apPe":
-					lock (commands) {
-						if (HaveApPeTexts) {
+					lock (texts) {
+						if (texts.HaveApPeTexts) {
 							return new Choices(
-								new SemanticResultValue(apoapsisText, "ap"),
-								new SemanticResultValue(periapsisText, "pe"));
+								new SemanticResultValue(texts.apoapsisText, "ap"),
+								new SemanticResultValue(texts.periapsisText, "pe"));
 						}
 					}
 					break;
 
 				case "warpTarget":
-					lock (commands) {
-						if (HaveWarpTargetTexts) {
+					lock (texts) {
+						if (texts.HaveWarpTargetTexts) {
 							return new Choices(
-								new SemanticResultValue(apoapsisText, "ap"),
-								new SemanticResultValue(periapsisText, "pe"),
-								new SemanticResultValue(maneuverNodeText, "maneuverNode"),
-								new SemanticResultValue(soiText, "SoI"));
+								new SemanticResultValue(texts.apoapsisText, "ap"),
+								new SemanticResultValue(texts.periapsisText, "pe"),
+								new SemanticResultValue(texts.maneuverNodeText, "maneuverNode"),
+								new SemanticResultValue(texts.soiText, "SoI"));
 						}
 					}
 					break;
 
 				default:
-					lock (commands) {
-						List<string> texts = getMacroValueTexts(macro);
-						if ((texts != null) && (texts.Count() > 0)) {
+					lock (texts) {
+						List<string> valueTexts = getMacroValueTexts(macro);
+						if ((valueTexts != null) && (valueTexts.Count() > 0)) {
 							Choices choices = new Choices();
-							for (int i = 0; i < texts.Count(); i++) {
-								choices.Add(new SemanticResultValue(texts[i], i.ToString()));
+							for (int i = 0; i < valueTexts.Count(); i++) {
+								choices.Add(new SemanticResultValue(valueTexts[i], i.ToString()));
 							}
 							return choices;
 						}
@@ -529,13 +474,13 @@ namespace VoiceServer {
 		}
 
 		private List<string> getMacroValueTexts(string macroId) {
-			if (macroValueTexts.ContainsKey(macroId)) {
-				return macroValueTexts[macroId];
+			if (texts.macroValueTexts.ContainsKey(macroId)) {
+				return texts.macroValueTexts[macroId];
 			} else {
 				string macroIdSuffix = "/" + macroId;
-				macroId = macroValueTexts.Keys.FirstOrDefault(k => k.EndsWith(macroIdSuffix));
+				macroId = texts.macroValueTexts.Keys.FirstOrDefault(k => k.EndsWith(macroIdSuffix));
 				if (macroId != null) {
-					return macroValueTexts[macroId];
+					return texts.macroValueTexts[macroId];
 				}
 			}
 			return null;

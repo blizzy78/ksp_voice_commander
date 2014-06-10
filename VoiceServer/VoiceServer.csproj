@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="StopWatch.cs" />
+    <Compile Include="Texts.cs" />
     <Compile Include="VoiceServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
