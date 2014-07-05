@@ -136,14 +136,14 @@ namespace VoiceServer {
 
 		private void speechRecognized(RecognitionResult result) {
 #if DEBUG
-			Console.WriteLine(string.Format("Command recognized: {0} (confidence: {1}%)", result.Text, (result.Confidence * 100f).ToString("F1")));
+			Console.WriteLine(string.Format("Command recognized: {0} (confidence: {1:F1}%)", result.Text, result.Confidence * 100f));
 #endif
 
 			if (result.Text != GENERIC_TEST_COMMAND) {
 				StringBuilder buf = new StringBuilder();
 				if (commandGrammars.ContainsKey(result.Grammar)) {
 					buf.Append("command=").Append(commandGrammars[result.Grammar])
-						.Append("|confidence=").Append(string.Format(CultureInfo.InvariantCulture, "{0}", result.Confidence));
+						.Append("|confidence=").Append(string.Format(CultureInfo.InvariantCulture, "{0:F4}", result.Confidence));
 					foreach (string key in result.Semantics.Select(kv => kv.Key)) {
 						buf.Append("|").Append(key).Append("=").Append(result.Semantics[key].Value);
 					}
