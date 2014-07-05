@@ -1,4 +1,10 @@
-﻿1.2.0, 2014-05-17
+﻿1.3.0, 2014-07-05
+- Added new commands. See http://bit.ly/1lnCdEv for a complete list.
+- Added the ability to fill in default texts for commands in the configuration. This will fill
+  in a default configuration for any empty command text box.
+- Updated for Toolbar Plugin 1.7.3 (included.)
+
+1.2.0, 2014-05-17
 - Added new commands. See http://bit.ly/1lnCdEv for a complete list.
 - Added optional push-to-talk: Press a key on your keyboard, mouse, or joystick to enable
   listening only temporarily.
