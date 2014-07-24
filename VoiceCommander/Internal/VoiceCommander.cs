@@ -37,7 +37,7 @@ using Toolbar;
 namespace VoiceCommander {
 	[KSPAddonFixed(KSPAddon.Startup.Instantly, true, typeof(VoiceCommander))]
 	public partial class VoiceCommander : MonoBehaviour {
-		internal const int VERSION = 5;
+		internal const int VERSION = 6;
 
 		private const string HOST = "127.0.0.1";
 		private const int CLIENT_PORT = 48285;
