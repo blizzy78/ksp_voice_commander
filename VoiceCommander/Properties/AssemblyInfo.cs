@@ -36,3 +36,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
 [assembly: KSPAssembly("VoiceCommander", 1, 0)]
+
+[assembly: KSPAssemblyDependency("Toolbar", 1, 0)]
