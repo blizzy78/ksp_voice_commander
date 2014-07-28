@@ -30,50 +30,53 @@ using System.Text;
 using UnityEngine;
 
 namespace VoiceCommander {
-	internal class UpdateChecker {
-		private const string VERSION_URL = "http://blizzy.de/voice-commander/version.txt";
+	[KSPAddon(KSPAddon.Startup.EveryScene, true)]
+	internal class UpdateChecker : MonoBehaviour {
+		private const string VERSION_URL = "http://blizzy.de/voice-commander/version2.txt";
 
-		internal bool UpdateAvailable {
-			get;
-			private set;
-		}
-
-		internal event Action OnDone;
+		internal static bool Done;
+		internal static string[] KspVersions = null;
+		internal static bool? UpdateAvailable;
 
 		private WWW www;
-		private bool done;
 
 		internal UpdateChecker() {
 		}
 
-		internal void update() {
-			if (!done) {
+		private void Update() {
+			Log.trace("UpdateChecker.update()");
+
+			if (!Done) {
 				if (www == null) {
+					Log.debug("getting version from {0}", VERSION_URL);
 					www = new WWW(VERSION_URL);
 				}
 
 				if (www.isDone) {
-					bool updateAvailable = false;
-					if (String.IsNullOrEmpty(www.error)) {
-						try {
-							updateAvailable = int.Parse(www.text) > VoiceCommander.VERSION;
-						} catch (Exception) {
-							// ignore
+					try {
+						bool updateAvailable = false;
+						if (String.IsNullOrEmpty(www.error)) {
+							string text = www.text.Replace("\r", string.Empty);
+							Log.debug("version text: {0}", text);
+							string[] lines = text.Split(new char[] { '\n' }, StringSplitOptions.None);
+							try {
+								int version = int.Parse(lines[0]);
+								updateAvailable = version > VoiceCommander.VERSION;
+							} catch (Exception) {
+								// ignore
+							}
+							KspVersions = lines[1].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 						}
-					}
 
-					if (updateAvailable) {
-						Debug.Log(string.Format("[VoiceCommander] update found: {0} vs {1}", www.text, VoiceCommander.VERSION));
-						UpdateAvailable = true;
-					} else {
-						Debug.Log(string.Format("[VoiceCommander] no update found: {0} vs {1}", www.text, VoiceCommander.VERSION));
-					}
-
-					www = null;
-					done = true;
-
-					if (OnDone != null) {
-						OnDone();
+						if (updateAvailable) {
+							Log.info("update found: {0} vs {1}", www.text, VoiceCommander.VERSION);
+						} else {
+							Log.info("no update found: {0} vs {1}", www.text, VoiceCommander.VERSION);
+						}
+						UpdateAvailable = updateAvailable;
+					} finally {
+						www = null;
+						Done = true;
 					}
 				}
 			}

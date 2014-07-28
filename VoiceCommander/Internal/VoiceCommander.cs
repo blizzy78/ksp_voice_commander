@@ -35,7 +35,7 @@ using UnityEngine;
 using Toolbar;
 
 namespace VoiceCommander {
-	[KSPAddonFixed(KSPAddon.Startup.Instantly, true, typeof(VoiceCommander))]
+	[KSPAddon(KSPAddon.Startup.Instantly, true)]
 	public partial class VoiceCommander : MonoBehaviour {
 		internal const int VERSION = 6;
 
@@ -46,11 +46,6 @@ namespace VoiceCommander {
 		private const long PUSH_TO_TALK_GRACE_PERIOD = 1500;
 
 		internal List<VoiceCommandNamespace> Namespaces {
-			get;
-			private set;
-		}
-
-		internal bool UpdateAvailable {
 			get;
 			private set;
 		}
@@ -66,7 +61,6 @@ namespace VoiceCommander {
 		private long pushToTalkListeningStopped;
 		private SettingsWindow settingsWindow;
 		private Dictionary<string, string[]> macroValueTexts = new Dictionary<string, string[]>();
-		private UpdateChecker updateChecker;
 
 		private bool ReactToCommands {
 			get {
@@ -120,12 +114,6 @@ namespace VoiceCommander {
 
 			// close settings window on scene change
 			GameEvents.onGameSceneLoadRequested.Add(sceneChanged);
-
-			updateChecker = new UpdateChecker();
-			updateChecker.OnDone += () => {
-				UpdateAvailable = updateChecker.UpdateAvailable;
-				updateChecker = null;
-			};
 		}
 
 		private void updateButtonIcon() {
@@ -146,10 +134,6 @@ namespace VoiceCommander {
 
 		private void Update() {
 			handleQueuedPackets();
-
-			if (updateChecker != null) {
-				updateChecker.update();
-			}
 
 			if (settingsWindow != null) {
 				settingsWindow.update();

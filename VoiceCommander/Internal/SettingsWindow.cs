@@ -148,7 +148,7 @@ namespace VoiceCommander {
 
 			drawPushToTalk();
 
-			if (VoiceCommander.Instance.UpdateAvailable) {
+			if (UpdateChecker.Done && (UpdateChecker.UpdateAvailable == true)) {
 				GUILayout.Space(15);
 				Color oldColor = GUI.color;
 				GUI.color = Color.yellow;

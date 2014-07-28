@@ -32,7 +32,7 @@ using System.Text;
 using UnityEngine;
 
 namespace VoiceCommander {
-	[KSPAddonFixed(KSPAddon.Startup.MainMenu, true, typeof(InstallChecker))]
+	[KSPAddon(KSPAddon.Startup.MainMenu, true)]
 	internal class InstallChecker : MonoBehaviour {
 		internal void Start() {
 			string executingAssemblyName = Assembly.GetExecutingAssembly().GetName().Name;
